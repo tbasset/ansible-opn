@@ -1,0 +1,17 @@
+---
+
+- hosts: all
+
+  tasks:
+
+    - name: upload new template
+      copy:
+        src: '/etc/systemd/journald.conf'
+        dest: '/etc/systemd/journald.conf'
+      become: true
+
+    - name: reload systemd-journald
+      systemd:
+        name: systemd-journald
+        state: restarted
+      become: true

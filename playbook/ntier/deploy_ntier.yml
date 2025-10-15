@@ -1,0 +1,14 @@
+---
+#   vars:
+#     opn_project: ntier
+#     opn_network: ntier
+
+- import_playbook: ntier_create.yml
+
+- import_playbook: ../upgrade.yml
+  # vars:
+  #   target: ntier
+
+- import_playbook: ntier_prepare.yml
+
+- import_playbook: ntier_setup.yml

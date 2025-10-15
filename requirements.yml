@@ -1,0 +1,9 @@
+---
+
+- src: https://github.com/tbasset/ansible-role-deploy-git-repos.git
+  name: ansible-role-deploy-git-repos
+
+- src: geerlingguy.glusterfs
+- src: geerlingguy.apache
+- src: geerlingguy.apache-php-fpm
+- src: geerlingguy.php

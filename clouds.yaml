@@ -1,0 +1,16 @@
+---
+clouds:
+  opn:
+    auth:
+      auth_url: https://192.168.133.3:5000
+      username: tomm
+      password: papillon
+      project_name: admin
+      project_domain_id: default
+      user_domain_id: default
+    region_name: RegionOne
+    identity_api_version: '3'
+    volume_api_version: '3'
+    # validate_certs: false
+    verify: false
+    insecure: true

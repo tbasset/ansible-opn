@@ -1,0 +1,21 @@
+---
+
+- name: Stop service apache2, if started
+  ansible.builtin.service:
+    name: apache2
+    enabled: false
+    state: stopped
+
+- name: Restart service "php{{ php_default_version_debian }}-fpm"
+  ansible.builtin.service:
+    name: "php{{ php_default_version_debian }}-fpm"
+    enabled: true
+    state: restarted
+
+# - name: Create file /var/www/status.php
+#   copy:
+#     dest: '/var/www/status.php'
+#     content: |
+#       <?= phpinfo(); ?>
+# - name: Fix ownerships
+#   file: dest=/var/www/status.php owner=www-data group=www-data recurse=no

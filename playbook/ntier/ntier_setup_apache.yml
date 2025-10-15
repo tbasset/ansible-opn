@@ -1,0 +1,21 @@
+---
+
+- name: Start service apache2, if stopped
+  ansible.builtin.service:
+    name: apache2
+    enabled: true
+    state: restarted
+
+# - name: Create file /var/www/index.html
+#   copy:
+#     dest: '/var/www/index.html'
+#     content: |
+#       <html>
+#       <head><title>{{ inventory_hostname }}</title></head>
+#       <body>
+#       <a href="/status.php">status.php</a>
+#       <a href="/balancer-manager">balancer-manager</a>
+#       </body>
+#       </html>
+# - name: Fix ownerships
+#   file: dest=/var/www/index.html owner=www-data group=www-data recurse=no

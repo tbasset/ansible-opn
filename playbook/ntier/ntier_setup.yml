@@ -1,0 +1,156 @@
+---
+
+- hosts: ntier
+  order: sorted
+  become: true
+
+  #MARK: VARS
+  vars:
+
+    apache_remove_default_vhost: true
+    apache_create_vhosts: true
+    apache_mods_enabled:
+      - status
+      - ssl
+      - rewrite
+      - slotmem_shm
+      - proxy_balancer
+      - lbmethod_byrequests
+    apache_vhosts:
+      - servername: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        documentroot: "{{ mountpoint }}"
+        extra_parameters: |
+          {{ fpm_backend }}
+
+    php_install_from_source: false
+    php_packages_extra: 
+      - php{{ php_default_version_debian }}-mysql
+    php_use_managed_ini: false
+    php_session_save_handler: memcached
+    php_session_save_path: "{{ hostvars[ntierntier-db1.opn.lab]['ansible_default_ipv4']['address'] }}:11211"
+    php_file_uploads: "On"
+    php_upload_max_filesize: "32M"
+    php_post_max_size: "32M"
+    php_date_timezone: "Europe/Paris"
+    php_enable_apc: true
+    php_apc_enable_cli: "0"
+    php_opcache_zend_extension: "opcache.so"
+    php_opcache_enable: "1"
+    php_opcache_enable_cli: "0"
+    php_enable_php_fpm: true
+    php_fpm_pools:
+      - pool_name: www
+        pool_template: www.conf.j2
+        pool_listen: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:9000"
+        pool_listen_allowed_clients: "{{ groups['ntier-web'] | map('extract', hostvars, ['ansible_default_ipv4','address']) | list | join(',') }}"
+        pool_pm: dynamic
+        pool_pm_max_children: 4
+        pool_pm_start_servers: 2
+        pool_pm_min_spare_servers: 1
+        pool_pm_max_spare_servers: 2
+        pool_pm_max_requests: 500
+        pool_pm_status_path: /status
+
+  #MARK: PRE_TASKS
+  pre_tasks:
+
+    - name: Prepare php-fpm backend list
+      set_fact:
+        fpm_backend: |
+          <Directory /var/www>
+            Require all granted
+            RewriteEngine On
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteRule ^(.*)$ index.php [QSA,L]
+          </Directory>
+          <Proxy "balancer://fpm">
+            {% for item in groups['ntier-app'] %}
+            BalancerMember fcgi://{{ hostvars[item]['ansible_default_ipv4']['address'] }}:9000 retry=1 timeout=60
+            {% endfor %}
+            ProxySet lbmethod=byrequests
+          </Proxy>
+          <FilesMatch ".+\.ph(?:ar|p|tml)$">
+              <If "-f %{REQUEST_FILENAME}">
+                  SetHandler proxy:balancer://fpm
+              </If>
+          </FilesMatch>
+          <Location "/balancer-manager">
+              SetHandler balancer-manager
+              Require host {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
+              Require ip 127
+          </Location>
+
+    - debug: var=fpm_backend
+
+    - name: Install git package
+      ansible.builtin.apt:
+        name: git
+        state: present
+      when: ('ntier-web' in group_names) or ('ntier-app' in group_names)
+
+    - name: Install unzip package
+      ansible.builtin.apt:
+        name: unzip
+        state: present
+      when: ('ntier-app' in group_names)
+
+    - name: Install apache2 package for dependencies
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+      when: ('ntier-app' in group_names)
+
+  #MARK: ROLES
+  roles:
+
+    - role: geerlingguy.glusterfs
+      when: ('ntier-web' in group_names) or ('ntier-app' in group_names)
+
+    - role: geerlingguy.apache
+      when: ('ntier-web' in group_names)
+
+    - role: geerlingguy.apache-php-fpm
+      when: ('ntier-web' in group_names)
+
+    - role: geerlingguy.php
+      when: ('ntier-app' in group_names)
+
+  #MARK: TASKS
+  tasks:
+
+    - name: Recursively remove directory
+      ansible.builtin.file:
+        path: /var/www/html
+        state: absent
+      when: ('ntier-app' in group_names) or ('ntier-web' in group_names)
+
+    - ansible.builtin.import_tasks:
+        file: ntier_setup_glusterfs.yml
+      when: ('ntier-gluster' in group_names) or ('ntier-web' in group_names)
+
+    - ansible.builtin.import_tasks:
+        file: ntier_setup_mysql.yml
+      when: ('ntier-db' in group_names)
+
+    - ansible.builtin.import_tasks:
+        file: ntier_setup_php.yml
+      when: ('ntier-app' in group_names)
+
+    - ansible.builtin.import_tasks:
+        file: ntier_setup_apache.yml
+      when: ('ntier-web' in group_names)
+
+    - ansible.builtin.import_tasks:
+        file: ntier_setup_wordpress.yml
+      when: ('ntier-app' in group_names)
+
+    #MARK: STATUS
+    - name: Gather self-heal facts about all gluster hosts in the cluster
+      gluster.gluster.gluster_heal_info:
+        name: "{{ gluster_brick_name }}"
+        status_filter: self-heal
+      register: self_heal_status
+      when: ('ntier-gluster' in group_names)
+    - debug:
+        var: self_heal_status
+      when: ('ntier-gluster' in group_names)

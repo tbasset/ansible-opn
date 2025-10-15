@@ -1,0 +1,47 @@
+---
+
+- name: Add an exception for this directory
+  ansible.builtin.command: git config --global --add safe.directory {{ mountpoint }}
+
+- name: Check if wp-config.php exists
+  stat:
+    path: "{{ mountpoint }}/wp-config.php"
+  when: ('ntier-app' in group_names)
+  register: register_wp_config
+  run_once: true
+
+- name: Git checkout
+  ansible.builtin.git:
+    repo: https://github.com/WordPress/WordPress.git
+    version: master
+    dest: "{{ mountpoint }}"
+    clone: yes
+    depth: 1
+  when: ('ntier-app' in group_names) and (not register_wp_config.stat.exists)
+  register: register_wp_git_clone
+  run_once: true
+
+- name: Fix ownerships
+  file: dest=/var/www owner=www-data group=www-data recurse=yes
+  when: ('ntier-app' in group_names) and (register_wp_git_clone is changed)
+  run_once: true
+
+- name: Check if wp-cli exists
+  stat:
+    path: "/usr/local/bin/wp"
+  when: ('ntier-app' in group_names)
+  register: register_wp_cli
+
+- name: Download wp-cli using get_url
+  become: yes
+  get_url:
+    url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    dest: /var/www
+    mode: 0755
+  when: ('ntier-app' in group_names) and (not register_wp_cli.stat.exists)
+  register: register_wp_cli_download
+
+- name: Copy files from foo to bar
+  copy: remote_src=true src=/var/www/wp-cli.phar mode=0755 dest=/usr/local/bin/wp
+  when: ('ntier-app' in group_names) and (register_wp_cli_download is changed)
+  register: register_wp_cli_copy

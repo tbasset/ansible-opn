@@ -1,0 +1,13 @@
+---
+
+- hosts: localhost
+
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: opn
+      validate_certs: false
+  tasks:
+
+    - name: Import images
+      ansible.builtin.include_tasks:
+        file: upload_images.yml

@@ -1,0 +1,45 @@
+---
+- name: Install mariadb-server
+  ansible.builtin.apt:
+    name: mariadb-server
+    state: present
+  register: package
+
+- name: Ensure MariaDB is listening on the network
+  ansible.builtin.lineinfile:
+    path: /etc/mysql/mariadb.conf.d/50-server.cnf
+    regexp: '^bind-address(\s+.*)='
+    line: bind-address = 0.0.0.0
+
+- name: Ensure MariaDB skip dns resolve
+  ansible.builtin.lineinfile:
+    path: /etc/mysql/mariadb.conf.d/50-server.cnf
+    regexp: '^#skip-name-resolve.*'
+    line: skip-name-resolve
+
+- name: Restart service mariadb
+  ansible.builtin.service:
+    name: mariadb
+    enabled: true
+    state: restarted
+  when: package is changed
+  
+- name: Install python3-pymysql
+  ansible.builtin.apt:
+    name: python3-pymysql
+    state: present
+
+- name: Create a new database with name 'ntier'
+  community.mysql.mysql_db:
+    name: ntier
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Create database user with name 'ntier' and password 'ntier' with all database privileges
+  community.mysql.mysql_user:
+    name: ntier
+    password: ntier
+    host: '%'
+    priv: '*.*:ALL'
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock

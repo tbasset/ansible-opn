@@ -1,0 +1,150 @@
+---
+
+# MARK: Debian
+- name: Upload image debian-9-openstack-amd64.qcow2
+  openstack.cloud.image:
+    name: Debian-9
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/debian-9-openstack-amd64.qcow2
+    visibility: public
+    tags:
+      - custom
+    properties: &properties_debian
+      cpu_arch: x86_64
+      distro: debian
+      hw_qemu_guest_agent: 'yes'
+      hypervisor_type: 'qemu'
+      # hw_machine_type: 'q35'
+      hw_disk_bus: 'scsi'
+      hw_scsi_model: 'virtio-scsi'
+      hw_vif_model: 'virtio'
+
+- name: Upload image debian-10-generic-amd64.qcow2
+  openstack.cloud.image:
+    name: Debian-10
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/debian-10-generic-amd64.qcow2
+    visibility: public
+    tags:
+      - custom
+    properties: *properties_debian
+
+- name: Upload image debian-11-generic-amd64.qcow2
+  openstack.cloud.image:
+    name: Debian-11
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/debian-11-generic-amd64.qcow2
+    visibility: public
+    tags:
+      - custom
+    properties: *properties_debian
+
+- name: Upload image debian-12-generic-amd64.qcow2
+  openstack.cloud.image:
+    name: Debian-12
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/debian-12-generic-amd64.qcow2
+    visibility: public
+    tags:
+      - custom
+    properties: *properties_debian
+
+# MARK: CentOS
+- name: Upload image CentOS-7-x86_64-GenericCloud.qcow2
+  openstack.cloud.image:
+    name: CentOS-7
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/CentOS-7-x86_64-GenericCloud.qcow2
+    visibility: public
+    tags:
+      - custom
+    properties: &properties_centos
+      cpu_arch: x86_64
+      distro: centos
+      hw_qemu_guest_agent: 'yes'
+      hypervisor_type: 'qemu'
+      hw_disk_bus: 'scsi'
+      hw_scsi_model: 'virtio-scsi'
+      hw_vif_model: 'virtio'
+
+- name: Upload image CentOS-Stream-GenericCloud-8-latest.x86_64.qcow2
+  openstack.cloud.image:
+    name: CentOS-8-Stream
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/CentOS-Stream-GenericCloud-8-latest.x86_64.qcow2
+    visibility: public
+    tags:
+      - custom
+    properties: *properties_centos
+
+- name: Upload image CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
+  openstack.cloud.image:
+    name: CentOS-9-Stream
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
+    visibility: public
+    tags:
+      - custom
+    properties: *properties_centos
+
+# MARK: Ubuntu
+- name: Upload image bionic-server-cloudimg-amd64.img
+  openstack.cloud.image:
+    name: Ubuntu-18.04LTS
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/bionic-server-cloudimg-amd64.img
+    visibility: public
+    tags:
+      - custom
+    properties: &properties_ubuntu
+      cpu_arch: x86_64
+      distro: ubuntu
+      hw_qemu_guest_agent: 'yes'
+      hypervisor_type: 'qemu'
+      hw_disk_bus: 'scsi'
+      hw_scsi_model: 'virtio-scsi'
+      hw_vif_model: 'virtio'
+
+- name: Upload image focal-server-cloudimg-amd64.img
+  openstack.cloud.image:
+    name: Ubuntu-20.04LTS
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/focal-server-cloudimg-amd64.img
+    visibility: public
+    tags:
+      - custom
+    properties: *properties_ubuntu
+
+- name: Upload image jammy-server-cloudimg-amd64.img
+  openstack.cloud.image:
+    name: Ubuntu-22.04LTS
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: /root/osaimages/jammy-server-cloudimg-amd64.img
+    visibility: public
+    tags:
+      - custom
+    properties: *properties_ubuntu
+
+# AlmaLinux-8-GenericCloud-latest.x86_64.qcow2
+# AlmaLinux-9-GenericCloud-latest.x86_64.qcow2
+# Rocky-9-GenericCloud.latest.x86_64.qcow2

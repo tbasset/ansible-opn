@@ -1,0 +1,59 @@
+---
+
+- hosts: localhost
+  serial: 1
+  gather_facts: false
+
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: opn
+      auth:
+        project_name: "{{ opn_project }}"
+
+    openstack.cloud.server:
+      volume_size: 8
+      key_name: ctrl2
+      network: "{{ opn_network }}"
+      auto_ip: false
+      security_groups:
+        - ALLOW_ALL
+
+  tasks:
+
+    - openstack.cloud.server:
+        state: present
+        name: "{{ lookup('community.general.random_pet') }}"
+        flavor: m2.small
+        image: Debian-12
+        boot_from_volume: false
+        terminate_volume: true
+        # userdata: |
+        #   #cloud-config
+        #   packages:
+        #     - nano
+        #     - htop
+        #     - ccze
+        #     - tmux
+        #   package_upgrade: true
+      register: instance
+      delegate_to: localhost
+
+    # - openstack.cloud.server:
+    #     state: present
+    #     name: "{{ lookup('community.general.random_pet') }}"
+    #     flavor: m2.small
+    #     image: Debian-12
+    #     boot_from_volume: true
+    #     terminate_volume: true
+    #   register: instance
+    #   delegate_to: localhost
+
+    # - openstack.cloud.server:
+    #     state: present
+    #     name: "{{ lookup('community.general.random_pet') }}"
+    #     flavor: m2.small
+    #     image: Debian-12
+    #     boot_from_volume: true
+    #     terminate_volume: true
+    #   register: instance
+    #   delegate_to: localhost

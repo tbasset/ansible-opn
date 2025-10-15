@@ -1,0 +1,82 @@
+---
+
+- hosts: ntier
+  serial: 1
+  become: true
+  
+  tasks:
+
+    - name: Install lvm2 dependency
+      package:
+        name: lvm2
+        state: present
+      when: ('ntier-gluster' in group_names) or ('ntier-db' in group_names)
+
+    - name: Install xfsprogs dependency
+      package:
+        name: xfsprogs
+        state: present
+      when: ('ntier-gluster' in group_names) or ('ntier-db' in group_names)
+
+    - name: Select unused disk from facts
+      set_fact:
+        disks: "{{ disks|default([]) + ['/dev/' + item.key] }}"
+      when:
+      - not item.value.partitions
+      - not item.value.holders
+      - item.key | regex_search ("sd")
+      with_dict: "{{ ansible_devices }}"
+
+    - name: debug
+      debug: var=disks
+      when: disks is defined
+
+    - name: task for creating volume group
+      community.general.lvg:
+          vg: data-vg
+          pvs: "{{ disks }}"
+      when: (('ntier-gluster' in group_names) or ('ntier-db' in group_names)) and (disks is defined)
+
+    - name: task for creating logical volume
+      community.general.lvol:
+          vg: data-vg
+          lv:  data-lv
+          size: 100%PVS
+          resizefs: true
+      when: (('ntier-gluster' in group_names) or ('ntier-db' in group_names)) and (disks is defined)
+
+    - name: format the data-lv to xfs filesystem
+      filesystem:
+        fstype: xfs
+        dev: /dev/data-vg/data-lv
+      when: (('ntier-gluster' in group_names) or ('ntier-db' in group_names)) and (disks is defined)
+
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ mountpoint }}"
+        state: directory
+        mode: '0755'
+      when: ('ntier-db' in group_names) and (disks is defined)
+
+    - name: mount the data-lv on "{{ mountpoint }}"
+      mount:
+        path: "{{ mountpoint }}"
+        src: /dev/data-vg/data-lv
+        fstype: xfs
+        state: mounted
+      when: ('ntier-db' in group_names) and (disks is defined)
+
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ gluster_brick_dir }}"
+        state: directory
+        mode: '0755'
+      when: ('ntier-gluster' in group_names) and (disks is defined)
+
+    - name: mount the data-lv on "{{ gluster_brick_dir }}"
+      mount:
+        path: "{{ gluster_brick_dir }}"
+        src: /dev/data-vg/data-lv
+        fstype: xfs
+        state: mounted
+      when: ('ntier-gluster' in group_names) and (disks is defined)

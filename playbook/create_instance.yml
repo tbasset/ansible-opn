@@ -1,0 +1,63 @@
+---
+
+- hosts: all,!localhost
+  serial: 1
+  gather_facts: false
+
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: opn
+      auth:
+        project_name: "{{ opn_project }}"
+
+    openstack.cloud.server:
+      volume_size: 8
+      key_name: ctrl2
+      network: "{{ opn_network }}"
+      auto_ip: "{{ opn_autoip }}"
+      boot_from_volume: false
+      terminate_volume: true
+      delete_ips: true
+      userdata: |
+        #cloud-config
+        hostname: {{ inventory_hostname_short }}
+        fqdn: {{ inventory_hostname }}
+        prefer_fqdn_over_hostname: true
+        chpasswd:
+          expire: False
+          list: |
+            debian:papillon
+        package_upgrade: true
+        manage_etc_hosts: false
+        runcmd:
+          - echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
+          - echo "search {{ inventory_hostname | replace(inventory_hostname_short + '.','') }}" >> /etc/resolvconf/resolv.conf.d/tail
+          - resolvconf -u
+  tasks:
+
+    - name: Fetch all projects with a name
+      openstack.cloud.project_info:
+        name: "{{ opn_project }}"
+      register: pg
+      delegate_to: localhost
+
+    - name: Get specific security group
+      openstack.cloud.security_group_info:
+        name: "{{ opn_sg }}"
+        project_id: "{{ pg.projects[0].id }}"
+      register: sg
+      delegate_to: localhost
+
+    - openstack.cloud.server:
+        state: present
+        name: "{{ inventory_hostname_short }}"
+        flavor: "{{ opn_flavor | d('m1.medium') }}"
+        image: "{{ opn_image | d('Debian-11') }}"
+        boot_from_volume: false
+        terminate_volume: true
+        delete_ips: true
+        security_groups: 
+          - "{{ sg.security_groups[0].id }}"
+      register: instance
+      delegate_to: localhost
+

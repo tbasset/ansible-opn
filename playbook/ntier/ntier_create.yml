@@ -1,0 +1,73 @@
+---
+
+- hosts: ntier
+  serial: 1
+  gather_facts: false
+
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: opn
+      auth:
+        project_name: "{{ opn_project }}"
+
+    openstack.cloud.server:
+      volume_size: 8
+      key_name: ctrl2
+      network: "{{ opn_network }}"
+      auto_ip: false
+      security_groups: 
+        - default
+        - IN_SSH
+        - IN_HTTP
+      userdata: |
+        #cloud-config
+        hostname: {{ inventory_hostname_short }}
+        fqdn: {{ inventory_hostname }}
+        prefer_fqdn_over_hostname: true
+        chpasswd:
+          expire: False
+          list: |
+            debian:papillon
+        package_upgrade: true
+        manage_etc_hosts: false
+        runcmd:
+          - echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
+          - echo "search {{ inventory_hostname | replace(inventory_hostname_short + '.','') }}" >> /etc/resolvconf/resolv.conf.d/tail
+          - resolvconf -u
+
+  tasks:
+
+    - openstack.cloud.server:
+        state: present
+        name: "{{ inventory_hostname_short }}"
+        flavor: m2.small
+        image: Debian-12
+        boot_from_volume: false
+      register: instance
+      delegate_to: localhost
+
+    - name: create 8gb "{{ inventory_hostname_short + '_data' }}" volume
+      openstack.cloud.volume:
+        state: present
+        size: 8
+        name: "{{ inventory_hostname_short + '_data' }}"
+      delegate_to: localhost
+      when: ('ntier-gluster' in group_names) or ('ntier-db' in group_names)
+
+    - name: Attach volume "{{ inventory_hostname_short + '_data' }}" to instance "{{ inventory_hostname_short }}"
+      openstack.cloud.server_volume:
+        state: present
+        server: "{{ inventory_hostname_short }}"
+        volume: "{{ inventory_hostname_short + '_data' }}"
+        device: /dev/sdb
+      delegate_to: localhost
+      when: ('ntier-gluster' in group_names) or ('ntier-db' in group_names)
+
+    - name: Refresh inventory
+      meta: refresh_inventory
+
+    - name: Wait 15 seconds for instance to boot
+      ansible.builtin.wait_for:
+        timeout: 15
+      delegate_to: localhost
+      when: instance is changed
