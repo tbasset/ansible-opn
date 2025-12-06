@@ -1,0 +1,26 @@
+---
+
+- name: Galera recovery, start a new cluster
+  hosts: "{{ groups['galera_container'][0] }}"
+  tasks:
+
+
+    - name: "Stop galera services"
+      ansible.builtin.shell: |
+        systemctl stop mariadb
+
+    - name: "Enable bootstrap in /var/lib/mysql/grastate.dat"
+      ansible.builtin.shell: |
+        sed -i 's/safe_to_bootstrap: 0/safe_to_bootstrap: 1/' /var/lib/mysql/grastate.dat
+
+    - name: "Enable galera env to start a new cluster"
+      ansible.builtin.shell: |
+        systemctl set-environment _WSREP_NEW_CLUSTER='--wsrep-new-cluster'
+
+    - name: "Start galera new cluster"
+      ansible.builtin.shell: |
+        systemctl start mariadb
+
+    - name: "Cleanup env"
+      ansible.builtin.shell: |
+        systemctl set-environment _WSREP_NEW_CLUSTER=''
