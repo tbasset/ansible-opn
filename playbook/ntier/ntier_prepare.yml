@@ -3,7 +3,7 @@
 - hosts: ntier
   serial: 1
   become: true
-  
+
   tasks:
 
     - name: Install lvm2 dependency

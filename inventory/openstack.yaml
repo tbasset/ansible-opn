@@ -1,7 +1,12 @@
 plugin: openstack.cloud.openstack
+strict: true
 all_projects: true
 expand_hostvars: true
 fail_on_errors: true
-only_clouds:
-  - "opn"
-strict: true
+#only_clouds:
+#  - "default"
+cache: true
+cache_plugin: memory
+cache_timeout: 300
+# alternative clouds.yaml
+#cloud_yaml_path: /root/.config/openstack/clouds.yaml

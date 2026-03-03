@@ -3,11 +3,11 @@ clouds:
   opn:
     auth:
       auth_url: https://192.168.133.3:5000
-      username: user
-      password: password
+      username: admin
+      password: b0004c7b0217ec419ec562a66bee2b7daf733a2e286c2c
       project_name: admin
-#      project_domain_id: default
-#      user_domain_id: default
+      project_domain_id: default
+      user_domain_id: default
     region_name: RegionOne
     identity_api_version: '3'
     volume_api_version: '3'
