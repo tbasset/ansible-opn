@@ -1,0 +1,274 @@
+# openstack_operations
+
+# Updating the node with the new configuration
+# Run the appropriate playbooks depending on the group_binds section.
+# If you update the networks requiring a change in all nodes with a linux bridge agent
+
+openstack-ansible containers-deploy.yml --limit localhost,infra01,infra01-host_containers
+openstack-ansible containers-deploy.yml --limit localhost,infra02,infra02-host_containers
+openstack-ansible containers-deploy.yml --limit localhost,infra03,infra03-host_containers
+
+# Then update the neutron configuration.
+
+openstack-ansible os-neutron-install.yml --limit localhost,infra01,infra01-host_containers
+openstack-ansible os-neutron-install.yml --limit localhost,infra02,infra02-host_containers
+openstack-ansible os-neutron-install.yml --limit localhost,infra03,infra03-host_containers
+
+# Restart a Networking agent container
+# Under some circumstances, configuration or temporary issues, one specific or all neutron agents container need to be restarted.
+
+# This example will issue a reboot to the container named with neutron_agents_container_hostname_name from inside:
+
+ansible -m shell neutron_agents_container_hostname_name -a 'reboot'
+
+# Example of rebooting one container at a time, 60 seconds apart:
+
+ansible -m shell neutron_agents_container -a 'sleep 60; reboot' --forks 1
+
+# If the container does not respond, it can be restarted from the physical network host:
+
+ansible -m shell network_hosts -a 'for c in $(lxc-ls -1 |grep neutron_agents_container); do lxc-stop -n $c && lxc-start -d -n $c; done' --forks 1
+
+# Migration
+# The live migration is accessible via the nova client.
+
+nova live-migration [--block-migrate] [--force] <uuid> [<host>]
+
+# Example live migration on a local storage:
+
+nova live-migration --block-migrate <uuid of the instance> <nova host>
+
+# Monitoring the status
+# Once the live migration request has been accepted, the status can be monitored with the nova client:
+
+nova migration-list
+
+# +-----+------------+-----------+----------------+--------------+-----------+-----------+---------------+------------+------------+------------+------------+-----------------+
+# | Id | Source Node | Dest Node | Source Compute | Dest Compute | Dest Host | Status    | Instance UUID | Old Flavor | New Flavor | Created At | Updated At | Type            |
+# +----+-------------+-----------+----------------+--------------+-----------+-----------+---------------+------------+------------+------------+------------+-----------------+
+# | 6  | -           | -         | compute01      | compute02    | -         | preparing | f95ee17a-d09c | 7          | 7          | date       | date       | live-migration  |
+# +----+-------------+-----------+----------------+--------------+-----------+-----------+---------------+------------+------------+------------+------------+-----------------+
+# To filter the list, the options --host or --status can be used:
+
+nova migration-list --status error
+
+# Galera cluster status (mysql)
+
+ansible galera_container -m shell -a "mysql -e 'show status like \"%wsrep_cluster_%\";'"
+
+ansible galera_container -m shell -a "cat /var/lib/mysql/grastate.dat"
+
+# Galera cluster recovery (mysql)
+# Run the galera-install playbook using the galera_force_bootstrap variable to automatically recover a node or an entire environment.
+# Run the following Ansible command to show the failed nodes:
+
+openstack-ansible galera-install.yml -e galera_force_bootstrap=True --tags galera_server-config
+# -e galera_server_bootstrap_node=othernode
+
+# You can additionally define a different bootstrap node through galera_server_bootstrap_node variable, in case current bootstrap node is in desynced/broken state. You can check what node is currently selected for bootstrap using this ad-hoc:
+
+ansible -m debug -a var="groups['galera_all'][0]" localhost
+
+# Add a compute host
+
+# Use the following procedure to add a compute host to an operational cluster.
+# Configure the host as a target host. See the target hosts configuration section of the deploy guide. for more information.
+# Edit the /etc/openstack_deploy/openstack_user_config.yml file and add the host to the compute_hosts stanza.
+# If necessary, also modify the used_ips stanza.
+
+# If the cluster is utilizing Telemetry/Metering (ceilometer), edit the /etc/openstack_deploy/conf.d/ceilometer.yml file and add the host to the metering-compute_hosts stanza.
+# Run the following commands to add the host. Replace NEW_HOST_NAME with the name of the new host.
+
+cd /opt/openstack-ansible/playbooks
+openstack-ansible setup-hosts.yml --limit localhost,NEW_HOST_NAME
+openstack-ansible openstack-hosts-setup.yml -e openstack_hosts_group=nova_compute --tags openstack_hosts-file
+openstack-ansible setup-openstack.yml --limit localhost,NEW_HOST_NAME
+
+#Alternatively you can try using new compute nodes deployment script /opt/openstack-ansible/scripts/add-compute.sh.
+# You can provide this script with extra tasks that will be executed before or right after OSA roles. To do so you should set environment variables PRE_OSA_TASKS or POST_OSA_TASKS with plays to run devided with semicolon:
+
+export POST_OSA_TASKS="/opt/custom/setup.yml --limit HOST_NAME;/opt/custom/tasks.yml --tags deploy"
+/opt/openstack-ansible/scripts/add-compute.sh HOST_NAME,HOST_NAME_2
+
+# Test new compute nodes
+# After creating a new node, test that the node runs correctly by launching an instance on the new node.
+
+openstack server create --image IMAGE --flavor m1.tiny \
+--key-name KEY --availability-zone ZONE:HOST:NODE \
+--nic net-id=UUID SERVER
+
+#Ensure that the new instance can respond to a networking connection test through the ping command. Log in to your monitoring system, and verify that the monitors return a green signal for the new node.
+
+# Shutting down the Compute host
+
+# If a Compute host needs to be shut down:
+
+# Disable the nova-compute binary:
+
+nova service-disable --reason "Hardware replacement" HOSTNAME nova-compute
+
+# List all running instances on the Compute host:
+
+nova list --all-t --host <compute_name> | awk '/ACTIVE/ {print $2}' > \
+/home/user/running_instances && for i in `cat /home/user/running_instances`; do nova stop $i ; done
+
+# Use SSH to connect to the Compute host.
+
+# Confirm all instances are down:
+
+virsh list --all
+
+# Shut down the Compute host:
+
+shutdown -h now
+
+# Once the Compute host comes back online, confirm everything is in working order and start the instances on the host. For example:
+
+cat /home/user/running_instances
+do nova start $instance
+  done
+
+# Enable the nova-compute service in the environment:
+
+nova service-enable HOSTNAME nova-compute
+
+### FLAVOR
+
+# flavor create
+
+openstack flavor create --public --ram 512 --disk 8 --vcpus 1 m1.tiny 
+openstack flavor create --public --ram 768 --disk 8 --vcpus 1 m1.small 
+openstack flavor create --public --ram 1280 --disk 8 --vcpus 2 m1.medium 
+openstack flavor create --public --ram 1792 --disk 8 --vcpus 3 m1.large 
+
+# flavor create with properties
+
+openstack flavor create --public --ram 512 --disk 8 --vcpus 1 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  m2.tiny
+
+openstack flavor create --public --ram 768 --disk 8 --vcpus 1 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  m2.small
+
+openstack flavor create --public --ram 1280 --disk 8 --vcpus 2 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  m2.medium
+
+openstack flavor create --public --ram 1792 --disk 8 --vcpus 2 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  m2.large
+
+
+openstack flavor create --public --ram 512 --swap 512 --disk 20 --vcpus 1 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  k2.tiny
+
+openstack flavor create --public --ram 768 --swap 768 --disk 20 --vcpus 1 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  k2.small
+
+openstack flavor create --public --ram 1280 --swap 1280 --disk 24 --vcpus 2 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  k2.medium
+
+openstack flavor create --public --ram 1792 --swap 1792 --disk 32 --vcpus 2 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  k2.large
+
+openstack flavor create --public --ram 2304 --swap 2304 --disk 32 --vcpus 2 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  k2.xlarge
+
+openstack flavor create --public --ram 2816 --swap 2816 --disk 32 --vcpus 2 \
+  --property "capabilities:profile"="compute" \
+  --property "capabilities:cpu_aes"="true" \
+  --property "capabilities:cpu_hugepages"="true" \
+  --property "capabilities:boot_option"="local" \
+  k2.xxlarge
+
+
+
+systemctl stop neutron-linuxbridge-agent
+systemctl stop neutron-l3-agent
+systemctl stop neutron-dhcp-agent
+systemctl stop neutron-metadata-agent
+systemctl disable neutron-linuxbridge-agent
+systemctl disable neutron-l3-agent
+systemctl disable neutron-dhcp-agent
+systemctl disable neutron-metadata-agent
+for i in $(ip netns | grep 'qdhcp\|qrouter' | awk {'print $1'}); do ip netns delete $i; done;
+ip netns | grep 'qdhcp\|qrouter' | awk {'print $1'}
+ip netns
+
+
+DEBIAN_FRONTEND=noninteractive apt-get -qy install openssh-server ccze nano
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8oOmGITzjhmI7MIX/2cXWTqOj1zachlThvsQ6gPM/x9wm9AFm/AoYkaOPnvT9L0bPiyfyaheNJWhfG+glLvbQYMSSOoyASOA86QjNeOY4nVn8AVFglfmf87trNFAFWZse8ZOT4JFS8vBhcTvskrRTrwMji1/SKcURC0ivqKmKgRrUjPW0bP62aFA6iYhPfUtr3HDxhFqx/IJChLA8o/8MezC9XxQ3pxwxzA5SRoeKA7QexROcvbzhziqpEs20l9ObKNxDHcZDRxQnBIYtPL0N5kdUe9VHxzSnBl8ut7akJJmzkjSIFjgmmanCOKMECcAvPcBwacj/hPt1zbvkWu3w/Z6ZmAaf2RDY7cLMxuTYkh/XWGschk/VKQk8wiDVAooGmO3VHWH7zyLAX78SzP0YCDXcDrKMoBBga7aeiHrCOMZNf/KFaIK5kXia6GOIBiNrOiOw1ODbz0pG7fjNJxvOZUO1sTKhqOiboDrj5bmm3IUc4qJa9rHsPskyEgbZ2RE= root@ctrl2" > /root/.ssh/authorized_keys
+chmod 0600 /root/.ssh/authorized_keys
+
+echo 'RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS="+sbwt very_short"' >> /etc/rabbitmq/rabbitmq-env.conf
+systemctl restart rabbitmq-server.service 
+
+# cleanup /openstack/venvs after some upgrade
+source /etc/openstack-release && cd /openstack/venvs && ls -1 /openstack/venvs/ | grep -v $DISTRIB_RELEASE | xargs rm -rf
+
+# resync the ovn norhbound db with compute portgroup
+source /etc/openstack-release && /openstack/venvs/neutron-${DISTRIB_RELEASE}/bin/neutron-ovn-db-sync-util --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini --ovn-neutron_sync_mode migrate
+
+dsh -M -g infra1 -- 'DEBIAN_FRONTEND=nonteractive apt-get -qy update'
+dsh -M -g infra1 -- 'DEBIAN_FRONTEND=nonteractive apt-get -qy upgrade'
+dsh -M -g infra1 -- 'DEBIAN_FRONTEND=nonteractive apt-get -qy clean'
+dsh -M -g infra1 -- 'DEBIAN_FRONTEND=nonteractive apt-get -qy autoremove'
+
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab1 -e opn_network=LAB1 ; sleep 12
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab2 -e opn_network=LAB2 ; sleep 12
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab3 -e opn_network=LAB3 ; sleep 12
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab4 -e opn_network=LAB4 ; sleep 12
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab5 -e opn_network=LAB5 ; sleep 12
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab6 -e opn_network=LAB6 ; sleep 12
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab7 -e opn_network=LAB7 ; sleep 12
+.venv/bin/ansible-playbook playbook/create_instance_random.yml -e opn_project=lab8 -e opn_network=LAB8 ; sleep 12
+
+
+openstack server list --all-projects --host node1
+
+openstack server migrate --live-migration --host node1 634ccef0-d27c-4444-8ea8-f5f838135f64
+openstack server migrate --live-migration --host node1 5694cf86-8ea8-46d6-862e-b3017b1174d3
+openstack server migrate --live-migration --host node1 10030d3a-c449-4c66-b616-d13a45754c4c
+openstack server migrate --live-migration --host node1 db7bda99-3477-438f-9fd7-2cf91aafa7ec
+openstack server migrate --live-migration --host node1 032a13bb-44b5-4c6b-b963-57f246c63966
+openstack server migrate --live-migration --host node1 176f4d66-a135-45b2-8c07-0c485e8b1bc1
+openstack server migrate --live-migration --host node1 e84c7cf1-ee20-45ae-90a8-620622f3446f
+
+
+openstack compute service list
+openstack compute service set --disable --disable-reason "hote en maintenance" node1 nova-compute
+openstack compute service list
+openstack compute service set --enable node1 nova-compute

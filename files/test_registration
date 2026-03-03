@@ -1,0 +1,21 @@
+dsh -o '-ldebian' -M -g test -- sudo uptime
+dsh -o '-ldebian' -M -g test -- sudo 'DEBIAN_FRONTEND=noninteractive apt-get -qy upgrade'
+dsh -o '-ldebian' -M -g test -- sudo 'DEBIAN_FRONTEND=noninteractive apt-get -qy install linux-image-cloud-amd64'
+dsh -o '-ldebian' -M -g test -- sudo 'DEBIAN_FRONTEND=noninteractive dpkg -l | grep linux-image'
+dsh -o '-ldebian' -M -g test -- sudo 'DEBIAN_FRONTEND=noninteractive apt-get -qy remove --purge linux-image-6.1.0-21-amd64 linux-image-6.1.0-28-amd64 linux-image-amd64'
+dsh -o '-ldebian' -M -g test -- sudo 'DEBIAN_FRONTEND=noninteractive apt-get -qy autoremove'
+dsh -o '-ldebian' -M -g test -- sudo 'DEBIAN_FRONTEND=noninteractive apt-get -qy clean'
+dsh -o '-ldebian' -M -g test -- sudo 'DEBIAN_FRONTEND=noninteractive journalctl --vacuum-size 100M'
+dsh -o '-ldebian' -M -g test -- sudo 'reboot'
+dsh -o '-ldebian' -M -g test -- sudo 'cat /etc/debian_release'
+
+dsh -o '-ldebian' -M -m close-mole -- "sudo puppet agent --test"
+
+dsh -o '-ldebian' -M -g test -- 'sudo echo "kernel.domainname = opn.lab" >> /etc/sysctl.conf && sudo sysctl -p'
+dsh -o '-ldebian' -M -g test -- 'sudo sed -i 's/^#kernel.domainname.*/kernel.domainname = opn.lab/' /etc/sysctl.conf && sudo sysctl -p'
+dsh -o '-ldebian' -M -g test -- "set -o pipefail && curl -sS --insecure 'https://tfm-app.opn.lab/register?hostgroup_id=9&location_id=2&operatingsystem_id=29&organization_id=1&update_packages=false' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo0LCJpYXQiOjE3MzQ3MTg4NDQsImp0aSI6ImFhY2M0NmQxZTQxNWIzN2EyMjViY2NjNWY3NTdiOGE2ZGNjOTk3Y2EwMjZlYmExZjdlM2JmMTczN2Y0N2E2YzIiLCJleHAiOjE3MzQ3MzMyNDQsInNjb3BlIjoicmVnaXN0cmF0aW9uI2dsb2JhbCByZWdpc3RyYXRpb24jaG9zdCJ9.36G1__MODJwjryKXO9LVeVyqtHOmy0oPv45hv1CT1BE' | sudo bash"
+dsh -o '-ldebian' -M -g test -- 'sudo facter hostname'
+dsh -o '-ldebian' -M -g test -- 'sudo facter fqdn'
+dsh -o '-ldebian' -M -g test -- 'sudo grep search /etc/resolv.conf ; sudo grep domain /etc/sysctl.conf'
+dsh -o '-ldebian' -M -g test -- 'sudo cat /etc/hostname ; sudo grep search /etc/resolv.conf ; sudo grep domain /etc/sysctl.conf ; facter hostname ; facter domain ; facter fqdn'
+dsh -o '-ldebian' -M -g test -- 'sudo puppet ssl clean'

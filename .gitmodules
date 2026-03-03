@@ -1,0 +1,3 @@
+[submodule "files/haproxy-custom-errors"]
+	path = files/haproxy-custom-errors
+	url = https://github.com/Jonathan-Rosewood/haproxy-custom-errors.git
