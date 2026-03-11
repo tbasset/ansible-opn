@@ -1,17 +1,19 @@
 ---
 
-- hosts: localhost
+- name: Deploy OpenStack Networks
+  hosts: localhost
   serial: 1
   gather_facts: false
 
   module_defaults:
     group/openstack.cloud.openstack:
-      cloud: opn
+      cloud: default
 
   tasks:
 
-    #MARK: EXTERNE
-    - openstack.cloud.network:
+    # MARK: EXTERNE
+    - name: Create EXTERNE network
+      openstack.cloud.network:
         project: admin
         state: present
         name: EXTERNE
@@ -22,7 +24,8 @@
         provider_physical_network: provider-vlan
         provider_segmentation_id: 5
 
-    - openstack.cloud.subnet:
+    - name: Create externe subnet
+      openstack.cloud.subnet:
         project: admin
         state: present
         name: externe
@@ -32,20 +35,23 @@
           - 192.168.133.251
         extra_attrs:
           dns_publish_fixed_ip: true
+      register: externe_subnet
 
-    #MARK: APP-NTIER
-    - openstack.cloud.network:
+    # MARK: APP-NTIER
+    - name: Create NTIER network
+      openstack.cloud.network:
         project: app-ntier
         state: present
         name: NTIER
-        dns_domain: opn.lab.
+        dns_domain: ntier.opn.lab.
         shared: false
         provider_network_type: geneve
 
-    - openstack.cloud.subnet:
+    - name: Create ntier subnet
+      openstack.cloud.subnet:
         project: app-ntier
         state: present
-        name: ntier 
+        name: ntier
         network_name: NTIER
         cidr: 192.168.23.0/24
         dns_nameservers:
@@ -53,28 +59,31 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create NTIER-GW router
+      openstack.cloud.router:
         project: app-ntier
         name: NTIER-GW
         network: EXTERNE
         interfaces:
-          - status
+          - ntier
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.23
         state: present
 
-    #MARK: APP-STATUS
-    - openstack.cloud.network:
+    # MARK: APP-STATUS
+    - name: Create STATUS network
+      openstack.cloud.network:
         project: app-status
         state: present
         name: STATUS
-        dns_domain: opn.lab.
+        dns_domain: status.opn.lab.
         shared: false
         provider_network_type: geneve
 
-    - openstack.cloud.subnet:
+    - name: Create status subnet
+      openstack.cloud.subnet:
         project: app-status
         state: present
         name: status
@@ -85,7 +94,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create STATUS-GW router
+      openstack.cloud.router:
         project: app-status
         name: STATUS-GW
         network: EXTERNE
@@ -93,20 +103,22 @@
           - status
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.22
         state: present
 
-    #MARK: APP-BILLING
-    - openstack.cloud.network:
+    # MARK: APP-BILLING
+    - name: Create BILLING network
+      openstack.cloud.network:
         project: app-billing
         state: present
         name: BILLING
-        dns_domain: opn.lab.
+        dns_domain: billing.opn.lab.
         shared: false
         provider_network_type: geneve
 
-    - openstack.cloud.subnet:
+    - name: Create billing subnet
+      openstack.cloud.subnet:
         project: app-billing
         state: present
         name: billing
@@ -117,7 +129,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create BILLING-GW router
+      openstack.cloud.router:
         project: app-billing
         name: BILLING-GW
         network: EXTERNE
@@ -125,20 +138,22 @@
           - billing
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.21
         state: present
 
-    #MARK: APP-FOREMAN
-    - openstack.cloud.network:
+    # MARK: APP-FOREMAN
+    - name: Create FOREMAN network
+      openstack.cloud.network:
         project: app-foreman
         state: present
         name: FOREMAN
-        dns_domain: opn.lab.
+        dns_domain: foreman.opn.lab.
         shared: false
         provider_network_type: geneve
 
-    - openstack.cloud.subnet:
+    - name: Create foreman subnet
+      openstack.cloud.subnet:
         project: app-foreman
         state: present
         name: foreman
@@ -149,7 +164,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create FOREMAN-GW router
+      openstack.cloud.router:
         project: app-foreman
         name: FOREMAN-GW
         network: EXTERNE
@@ -157,20 +173,22 @@
           - foreman
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.20
         state: present
 
-    #MARK: APP-MONITORING
-    - openstack.cloud.network:
+    # MARK: APP-MONITORING
+    - name: Create MONITORING network
+      openstack.cloud.network:
         project: app-monitoring
         state: present
         name: MONITORING
-        dns_domain: opn.lab.
+        dns_domain: monitoring.opn.lab.
         shared: false
         provider_network_type: geneve
 
-    - openstack.cloud.subnet:
+    - name: Create monitoring subnet
+      openstack.cloud.subnet:
         project: app-monitoring
         state: present
         name: monitoring
@@ -181,7 +199,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create MONITORING-GW router
+      openstack.cloud.router:
         project: app-monitoring
         name: MONITORING-GW
         network: EXTERNE
@@ -189,21 +208,22 @@
           - monitoring
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.19
         state: present
 
-    #MARK: LAB1
-    - openstack.cloud.network:
+    # MARK: LAB1
+    - name: Create LAB1 network
+      openstack.cloud.network:
         project: lab1
         state: present
         name: LAB1
-        dns_domain: opn.lab.
+        dns_domain: lab1.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5001
 
-    - openstack.cloud.subnet:
+    - name: Create lab1 subnet
+      openstack.cloud.subnet:
         project: lab1
         state: present
         name: lab1
@@ -214,7 +234,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB1-GW router
+      openstack.cloud.router:
         project: lab1
         name: LAB1-GW
         network: EXTERNE
@@ -222,21 +243,22 @@
           - lab1
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.11
         state: present
 
-    #MARK: LAB2
-    - openstack.cloud.network:
+    # MARK: LAB2
+    - name: Create LAB2 network
+      openstack.cloud.network:
         project: lab2
         state: present
         name: LAB2
-        dns_domain: opn.lab.
+        dns_domain: lab2.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5002
 
-    - openstack.cloud.subnet:
+    - name: Create lab2 subnet
+      openstack.cloud.subnet:
         project: lab2
         state: present
         name: lab2
@@ -247,7 +269,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB2-GW router
+      openstack.cloud.router:
         project: lab2
         name: LAB2-GW
         network: EXTERNE
@@ -255,21 +278,22 @@
           - lab2
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.12
         state: present
 
-    #MARK: LAB3
-    - openstack.cloud.network:
+    # MARK: LAB3
+    - name: Create LAB3 network
+      openstack.cloud.network:
         project: lab3
         state: present
         name: LAB3
-        dns_domain: opn.lab.
+        dns_domain: lab3.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5003
 
-    - openstack.cloud.subnet:
+    - name: Create lab3 subnet
+      openstack.cloud.subnet:
         project: lab3
         state: present
         name: lab3
@@ -280,7 +304,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB3-GW router
+      openstack.cloud.router:
         project: lab3
         name: LAB3-GW
         network: EXTERNE
@@ -288,21 +313,22 @@
           - lab3
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.13
         state: present
 
-    #MARK: LAB4
-    - openstack.cloud.network:
+    # MARK: LAB4
+    - name: Create LAB4 network
+      openstack.cloud.network:
         project: lab4
         state: present
         name: LAB4
-        dns_domain: opn.lab.
+        dns_domain: lab4.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5004
 
-    - openstack.cloud.subnet:
+    - name: Create lab4 subnet
+      openstack.cloud.subnet:
         project: lab4
         state: present
         name: lab4
@@ -313,7 +339,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB4-GW router
+      openstack.cloud.router:
         project: lab4
         name: LAB4-GW
         network: EXTERNE
@@ -321,21 +348,22 @@
           - lab4
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.14
         state: present
 
-    #MARK: LAB5
-    - openstack.cloud.network:
+    # MARK: LAB5
+    - name: Create LAB5 network
+      openstack.cloud.network:
         project: lab5
         state: present
         name: LAB5
-        dns_domain: opn.lab.
+        dns_domain: lab5.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5005
 
-    - openstack.cloud.subnet:
+    - name: Create lab5 subnet
+      openstack.cloud.subnet:
         project: lab5
         state: present
         name: lab5
@@ -346,7 +374,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB5-GW router
+      openstack.cloud.router:
         project: lab5
         name: LAB5-GW
         network: EXTERNE
@@ -354,21 +383,22 @@
           - lab5
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.15
         state: present
 
-    #MARK: LAB6
-    - openstack.cloud.network:
+    # MARK: LAB6
+    - name: Create LAB6 network
+      openstack.cloud.network:
         project: lab6
         state: present
         name: LAB6
-        dns_domain: opn.lab.
+        dns_domain: lab6.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5006
 
-    - openstack.cloud.subnet:
+    - name: Create lab6 subnet
+      openstack.cloud.subnet:
         project: lab6
         state: present
         name: lab6
@@ -379,7 +409,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB6-GW router
+      openstack.cloud.router:
         project: lab6
         name: LAB6-GW
         network: EXTERNE
@@ -387,21 +418,22 @@
           - lab6
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.16
         state: present
 
-    #MARK: LAB7
-    - openstack.cloud.network:
+    # MARK: LAB7
+    - name: Create LAB7 network
+      openstack.cloud.network:
         project: lab7
         state: present
         name: LAB7
-        dns_domain: opn.lab.
+        dns_domain: lab7.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5007
 
-    - openstack.cloud.subnet:
+    - name: Create lab7 subnet
+      openstack.cloud.subnet:
         project: lab7
         state: present
         name: lab7
@@ -412,7 +444,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB7-GW router
+      openstack.cloud.router:
         project: lab7
         name: LAB7-GW
         network: EXTERNE
@@ -420,21 +453,22 @@
           - lab7
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.17
         state: present
 
-    #MARK: LAB8
-    - openstack.cloud.network:
+    # MARK: LAB8
+    - name: Create LAB8 network
+      openstack.cloud.network:
         project: lab8
         state: present
         name: LAB8
-        dns_domain: opn.lab.
+        dns_domain: lab8.opn.lab.
         shared: false
         provider_network_type: geneve
-        # provider_segmentation_id: 5008
 
-    - openstack.cloud.subnet:
+    - name: Create lab8 subnet
+      openstack.cloud.subnet:
         project: lab8
         state: present
         name: lab8
@@ -445,7 +479,8 @@
         extra_attrs:
           dns_publish_fixed_ip: true
 
-    - openstack.cloud.router:
+    - name: Create LAB8-GW router
+      openstack.cloud.router:
         project: lab8
         name: LAB8-GW
         network: EXTERNE
@@ -453,6 +488,6 @@
           - lab8
         enable_snat: true
         external_fixed_ips:
-          - subnet_id: 91baef7d-6014-43ce-a6a5-a2abf07ef4e6
+          - subnet_id: "{{ externe_subnet.id }}"
             ip_address: 192.168.135.18
         state: present

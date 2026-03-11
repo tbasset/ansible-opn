@@ -1,0 +1,162 @@
+---
+
+- name: Deploy OpenStack DNS Zones
+  hosts: localhost
+  serial: 1
+  gather_facts: false
+
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: default
+
+  tasks:
+
+    # MARK: EXTERNE
+    - name: Create DNS zone opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone opn.lab
+        ttl: 3600
+
+    # MARK: ntier.opn.lab
+    - name: Create DNS zone opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: ntier.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone opn.lab
+        ttl: 3600
+
+    # MARK: status.opn.lab
+    - name: Create DNS zone status.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: status.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone status.opn.lab
+        ttl: 3600
+
+    # MARK: billing.opn.lab
+    - name: Create DNS zone billing.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: billing.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone billing.opn.lab
+        ttl: 3600
+
+    # MARK: foreman.opn.lab
+    - name: Create DNS zone foreman.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: foreman.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone foreman.opn.lab
+        ttl: 3600
+
+    # MARK: monitoring.opn.lab
+    - name: Create DNS zone monitoring.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: monitoring.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone monitoring.opn.lab
+        ttl: 3600
+
+    # MARK: lab1.opn.lab
+    - name: Create DNS zone lab1.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab1.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab1.opn.lab
+        ttl: 3600
+
+    # MARK: lab2.opn.lab
+    - name: Create DNS zone lab2.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab2.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab2.opn.lab
+        ttl: 3600
+
+    # MARK: lab3.opn.lab
+    - name: Create DNS zone lab3.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab3.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab3.opn.lab
+        ttl: 3600
+
+    # MARK: lab4.opn.lab
+    - name: Create DNS zone lab4.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab4.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab4.opn.lab
+        ttl: 3600
+
+    # MARK: lab5.opn.lab
+    - name: Create DNS zone lab5.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab5.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab5.opn.lab
+        ttl: 3600
+
+    # MARK: lab6.opn.lab
+    - name: Create DNS zone lab6.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab6.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab6.opn.lab
+        ttl: 3600
+
+    # MARK: lab6.opn.lab
+    - name: Create DNS zone lab6.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab6.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab6.opn.lab
+        ttl: 3600
+
+    # MARK: lab7.opn.lab
+    - name: Create DNS zone lab7.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab7.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab7.opn.lab
+        ttl: 3600
+
+    # MARK: lab8.opn.lab
+    - name: Create DNS zone lab8.opn.lab
+      openstack.cloud.dns_zone:
+        state: present
+        name: lab8.opn.lab.
+        type: primary
+        email: admin-dns@opn.lab
+        description: zone lab8.opn.lab
+        ttl: 3600

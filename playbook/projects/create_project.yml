@@ -71,7 +71,8 @@
       openstack.cloud.security_group:
         state: present
         name: ALLOW_ALL
-        description: allow incoming ssh
+        description: allow all incoming traffic
+
     - name: Update security group rules
       run_once: true
       delegate_to: localhost
@@ -79,6 +80,7 @@
         security_group: ALLOW_ALL
         protocol: tcp
         remote_ip_prefix: 0.0.0.0/0
+
     - name: Update security group rules
       run_once: true
       delegate_to: localhost
@@ -86,6 +88,7 @@
         security_group: ALLOW_ALL
         protocol: udp
         remote_ip_prefix: 0.0.0.0/0
+
     - name: Update security group rules
       run_once: true
       delegate_to: localhost

@@ -1,0 +1,78 @@
+---
+
+- name: Deploy OpenStack DNS RecordSet
+  hosts: localhost
+  serial: 1
+  gather_facts: false
+
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: default
+
+  tasks:
+
+    # Create a recordset named "vc.opn.lab."
+    - name: Create recordset for vc.opn.lab
+      openstack.cloud.recordset:
+        state: present
+        zone: opn.lab.
+        name: vc.opn.lab.
+        recordset_type: "a"
+        records: ['192.168.133.240']
+        description: vcenter lab
+        ttl: 3600
+
+    # Create a recordset named "esx.opn.lab."
+    - name: Create recordset for esx.opn.lab
+      openstack.cloud.recordset:
+        state: present
+        zone: opn.lab.
+        name: esx.opn.lab.
+        recordset_type: "a"
+        records: ['192.168.133.239']
+        description: vcenter lab
+        ttl: 3600
+
+    # Create a recordset named "ldap1.opn.lab."
+    - name: Create recordset for ldap1.opn.lab
+      openstack.cloud.recordset:
+        state: present
+        zone: opn.lab.
+        name: ldap1.opn.lab.
+        recordset_type: "a"
+        records: ['192.168.133.246']
+        description: ldap1 lab
+        ttl: 3600
+
+    # Create a recordset named "sso.opn.lab."
+    - name: Create recordset for sso.opn.lab
+      openstack.cloud.recordset:
+        state: present
+        zone: opn.lab.
+        name: sso.opn.lab.
+        recordset_type: "a"
+        records: ['192.168.133.245']
+        description: sso lab
+        ttl: 3600
+
+    # Create a recordset named "guac.opn.lab."
+    - name: Create recordset for guac.opn.lab
+      openstack.cloud.recordset:
+        state: present
+        zone: opn.lab.
+        name: guac.opn.lab.
+        recordset_type: "a"
+        records: ['192.168.133.243']
+        description: guac lab
+        ttl: 3600
+
+    # Create a recordset named "smtp.opn.lab."
+    - name: Create recordset for smtp.opn.lab
+      openstack.cloud.recordset:
+        state: present
+        zone: opn.lab.
+        name: smtp.opn.lab.
+        recordset_type: "a"
+        records: ['192.168.133.244']
+        description: smtp lab
+        ttl: 3600

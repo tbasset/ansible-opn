@@ -6,7 +6,7 @@
 
   module_defaults:
     group/openstack.cloud.openstack:
-      cloud: opn
+      cloud: default
       auth:
         project_name: "{{ opn_project }}"
 
@@ -15,7 +15,7 @@
       key_name: ctrl2
       network: "{{ opn_network }}"
       auto_ip: false
-      security_groups: 
+      security_groups:
         - default
         - IN_SSH
         - IN_HTTP
@@ -37,7 +37,8 @@
 
   tasks:
 
-    - openstack.cloud.server:
+    - name: Create server instance "{{ inventory_hostname_short }}"
+      openstack.cloud.server:
         state: present
         name: "{{ inventory_hostname_short }}"
         flavor: m2.small
@@ -46,7 +47,7 @@
       register: instance
       delegate_to: localhost
 
-    - name: create 8gb "{{ inventory_hostname_short + '_data' }}" volume
+    - name: "Create 8gb volume {{ inventory_hostname_short + '_data' }}"
       openstack.cloud.volume:
         state: present
         size: 8
@@ -54,7 +55,7 @@
       delegate_to: localhost
       when: ('ntier-gluster' in group_names) or ('ntier-db' in group_names)
 
-    - name: Attach volume "{{ inventory_hostname_short + '_data' }}" to instance "{{ inventory_hostname_short }}"
+    - name: "Attach volume to instance {{ inventory_hostname_short + '_data' }}"
       openstack.cloud.server_volume:
         state: present
         server: "{{ inventory_hostname_short }}"
@@ -63,10 +64,10 @@
       delegate_to: localhost
       when: ('ntier-gluster' in group_names) or ('ntier-db' in group_names)
 
-    - name: Refresh inventory
+    - name: "Refresh inventory"
       meta: refresh_inventory
 
-    - name: Wait 15 seconds for instance to boot
+    - name: "Wait 15 seconds for instance to boot"
       ansible.builtin.wait_for:
         timeout: 15
       delegate_to: localhost
