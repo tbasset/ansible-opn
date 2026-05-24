@@ -10,9 +10,9 @@ cpumax=20000
 memmax=1024M
 container=$(lxc-ls -1 --filter=nova[-_]api)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -21,9 +21,9 @@ cpumax=20000
 memmax=768M
 container=$(lxc-ls -1 --filter=zookeeper)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -32,9 +32,9 @@ cpumax=max
 memmax=1536M
 container=$(lxc-ls -1 --filter=horizon)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config} 
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -43,9 +43,9 @@ cpumax=20000
 memmax=768M
 container=$(lxc-ls -1 --filter=designate)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -54,9 +54,9 @@ cpumax=20000
 memmax=768M
 container=$(lxc-ls -1 --filter=keystone)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -65,9 +65,9 @@ cpumax=20000
 memmax=512M
 container=$(lxc-ls -1 --filter=glance)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -76,9 +76,9 @@ cpumax=20000
 memmax=1024M
 container=$(lxc-ls -1 --filter=cinder[-_]api)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -87,20 +87,20 @@ cpumax=20000
 memmax=4096M
 container=$(lxc-ls -1 --filter=neutron[-_]server)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
 echo "Setting limits for galera"
 cpumax=20000
-memmax=1536M
+memmax=2048M
 container=$(lxc-ls -1 --filter=galera)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -109,9 +109,9 @@ cpumax=20000
 memmax=768M
 container=$(lxc-ls -1 --filter=heat[-_]api)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -120,9 +120,9 @@ cpumax=20000
 memmax=256M
 container=$(lxc-ls -1 --filter=utility)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -131,9 +131,9 @@ cpumax=20000
 memmax=512M
 container=$(lxc-ls -1 --filter=placement)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -142,9 +142,9 @@ cpumax=20000
 memmax=4096M
 container=$(lxc-ls -1 --filter=rabbit[-_]mq)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -153,20 +153,20 @@ cpumax=20000
 memmax=512M
 container=$(lxc-ls -1 --filter=memcached)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
 echo "Setting limits for repo"
-cpumax=20000
-memmax=1024M
+cpumax=50000
+memmax=4096M
 container=$(lxc-ls -1 --filter=repo)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
 
@@ -175,13 +175,11 @@ cpumax=20000
 memmax=512M
 container=$(lxc-ls -1 --filter=neutron[-_]ovn[-_]northd)
 config="/var/lib/lxc/${container}/config"
-grep -q "lxc.cgroup2.cpu.max" ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
-grep -q "lxc.cgroup2.memory.max" ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
-grep -q "lxc.cgroup2.memory.high" ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.cpu.max" ${config} && sed -i 's/^lxc.cgroup2.cpu.max =.*/lxc.cgroup2.cpu.max = ${cpumax}/' ${config} || echo "lxc.cgroup2.cpu.max = ${cpumax}" >> ${config}
+grep -q "lxc.cgroup2.memory.max" ${config} && sed -i 's/^lxc.cgroup2.memory.max =.*/lxc.cgroup2.memory.max = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.max = ${memmax}" >> ${config}
+grep -q "lxc.cgroup2.memory.high" ${config} && sed -i 's/^lxc.cgroup2.memory.high =.*/lxc.cgroup2.memory.high = ${memmax}/' ${config} || echo "lxc.cgroup2.memory.high = ${memmax}" >> ${config}
 lxc-stop ${container}
 lxc-start ${container}
-
-
 
 # dsh -M -g infra1 -- "ps -eo size,command --sort -size | awk '{ hr=\$1/1024 ; sum +=hr} END {print sum}'"
 # infra1-nova-api-container-6182b2dd: 856.727             1024

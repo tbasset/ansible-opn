@@ -5,7 +5,7 @@
 
 - import_playbook: ntier_create.yml
 
-- import_playbook: ../upgrade.yml
+- import_playbook: ../../upgrade.yml
   # vars:
   #   target: ntier
 
