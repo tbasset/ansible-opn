@@ -1,0 +1,225 @@
+cd /opt/openstack-ansible/playbooks
+openstack-ansible haproxy-install.yml
+openstack-ansible k8s-install.yml -vvv      # → openstack.osa.k8s
+openstack-ansible os-magnum-install.yml
+
+openstack coe service list
+openstack coe cluster list
+openstack coe cluster template list
+
+openstack coe cluster create test1 --cluster-template k8s-v1.35.1 \
+  --master-count 1 --node-count 1 --keypair ctrl-ansible --timeout 60
+
+openstack coe cluster delete test1        # attendre la disparition
+
+https://github.com/vexxhost/capo-image-elements/releases/download/2026.11-1/ubuntu-22.04-v1.35.10.qcow2
+
+KUBE_TAG=v1.35.10
+IMG=ubuntu-22.04-${KUBE_TAG}
+curl -LO https://github.com/vexxhost/capo-image-elements/releases/download/2026.11-1/${IMG}.qcow2
+sha256sum ${IMG}.qcow2                     # sha256:7c1c34949e8216af179ac5fe9962a4ff563c59fae1f2b82d4ed4b29751e0daa4 
+qemu-img info ${IMG}.qcow2                 # format: qcow2
+openstack image create ${IMG} --disk-format qcow2 --container-format bare \
+  --property os_distro=ubuntu --file ${IMG}.qcow2
+
+
+openstack coe cluster template create k8s-${KUBE_TAG}-ovn-lb \
+  --coe kubernetes --image ${IMG} --external-network EXTERNE \
+  --master-flavor k8s.small --flavor k8s.small \
+  --network-driver calico --docker-storage-driver overlay2 \
+  --dns-nameserver 192.168.133.251 --floating-ip-enabled --master-lb-enabled \
+  --labels kube_tag=${KUBE_TAG},octavia_provider=ovn
+
+# --master-lb-enabled
+
+openstack coe cluster create test1 --cluster-template k8s-${KUBE_TAG}-ovn-lb \
+  --master-count 1 --node-count 1 --keypair ctrl-ansible --timeout 60
+
+mkdir -p ~/test1 && openstack coe cluster config test1 --dir ~/test1
+export KUBECONFIG=~/test1/config
+kubectl get nodes -o wide
+kubectl get pods -A
+
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+helm version
+
+export KUBECONFIG=~/test1/config
+helm repo add headlamp https://kubernetes-sigs.github.io/headlamp/
+helm repo update
+helm install headlamp headlamp/headlamp --namespace kube-system \
+  --set service.type=LoadBalancer
+kubectl -n kube-system get svc headlamp -w      # attendre l'EXTERNAL-IP
+kubectl -n kube-system create token headlamp --duration=24h
+
+
+
+#démo
+helm repo add podinfo https://stefanprodan.github.io/podinfo
+helm upgrade --install --wait podinfo podinfo/podinfo -n demo --create-namespace \
+  --set replicaCount=3 --set backend=http://backend-podinfo:9898/echo --set service.type=LoadBalancer
+kubectl -n demo get svc podinfo -w
+export SERVICE_IP=$(kubectl get svc --namespace demo podinfo -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo http://$SERVICE_IP:9898
+
+#scaling
+kubectl -n demo scale deploy podinfo --replicas=6
+#rolling update
+helm upgrade podinfo podinfo/podinfo -n demo --reuse-values --set ui.color=#34577c
+#auto repair
+kubectl -n demo delete pod <un-pod>
+
+#cluster kube scaling
+openstack coe cluster resize test1 3
+
+#spreading
+cat > test1/podinfo-spread.yaml<<EOF
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: podinfo
+EOF
+
+helm upgrade podinfo podinfo/podinfo -n demo --reuse-values -f test1/podinfo-spread.yaml
+kubectl -n demo get pods -o wide
+
+cat > test1/podinfo-spread.yaml<<EOF
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule
+    nodeTaintsPolicy: Honor
+    matchLabelKeys: ["pod-template-hash"]
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: podinfo
+EOF
+
+helm upgrade podinfo podinfo/podinfo -n demo --reuse-values -f podinfo-spread.yaml
+kubectl -n demo get pods -o wide
+
+kubectl -n demo rollout restart deploy podinfo
+
+
+l’auto-réparation, l’une des démonstrations les plus parlantes de cette architecture. 
+Une précision sur qui fait quoi : ce n’est pas Magnum lui-même qui a réagi, mais Cluster API, dans le cluster de management. Magnum ne fait que refléter l’état du cluster.
+
+Voici ce qui s’est passé :
+
+Côté Openstack, la VM s’éteint. (simulant une panne d'hôte qui portait ce workder).
+Le kubelet ne répond plus, et le nœud passe NotReady dans le cluster invité.
+Une MachineHealthCheck (MHC) de CAPI le détecte. Elle surveille l’état des nœuds. 
+Après un délai configuré, de quelques minutes, elle déclare la Machine en mauvais état et lance la remédiation.
+Le MachineSet du groupe de workers constate qu’il manque une machine en bon état pour atteindre la cible de 3. 
+CAPO crée une nouvelle VM, qui rejoint le cluster grâce à kubeadm.
+L’ancienne Machine est supprimée. CAPO détruit la VM éteinte.
+
+Côté Kubernetes, les pods de l’ancien nœud sont recréés. 
+La contrainte de répartition les envoie sur le nouveau nœud, le seul qui n’avait aucun pod. 
+Comme il s’agit de nouveaux pods, le scheduler les place correctement.
+
+Ce scénario fait une bonne démonstration en trois temps :
+
+1. openstack server stop <vm-worker>, simulant une panne matérielle ;
+2. on regarde podinfo continuer de répondre, avec 2 pods sur 3 ;
+3. quelques minutes plus tard, une nouvelle VM apparaît, rejoint le cluster, et le système revient à 3 workers et 3 pods répartis. 
+
+Personne n’est intervenu.
+
+
+#démo2
+export KUBECONFIG=~/test1/config
+helm upgrade onlineboutique oci://us-docker.pkg.dev/online-boutique-ci/charts/onlineboutique \
+  --install --create-namespace -n onlineboutique
+kubectl -n onlineboutique get pods -o wide -w  
+
+#stockage persistant pour redis
+kubectl -n onlineboutique apply -f - <<'EOF'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-cart-data
+spec:
+  storageClassName: block-nfs-storage1
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+EOF
+
+kubectl -n onlineboutique patch deploy redis-cart --type=json -p='[
+  {"op":"replace","path":"/spec/template/spec/volumes/0","value":{"name":"redis-data","persistentVolumeClaim":{"claimName":"redis-cart-data"}}},
+  {"op":"add","path":"/spec/template/spec/containers/0/args","value":["--appendonly","yes"]},
+  {"op":"replace","path":"/spec/strategy","value":{"type":"Recreate"}}
+]'
+
+
+helm uninstall onlineboutique -n onlineboutique
+kubectl delete ns onlineboutique
+
+
+
+la suite .. ?
+
+kubectl patch storageclass block-nfs-storage1 \
+  -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+
+## Réseau et exposition HTTP
+
+# Traefik, un contrôleur d’Ingress et de Gateway API.
+
+helm repo add traefik https://traefik.github.io/charts
+helm install traefik traefik/traefik -n traefik --create-namespace
+kubectl -n traefik get svc traefik -w          # EXTERNAL-IP = load-balancer Octavia OVN
+export TRAEFIK_IP=<EXTERNAL-IP>
+export DOMAIN=${TRAEFIK_IP}.nip.io             # ou k8s.lab
+
+# cert-manager, à combiner avec Traefik, pour des certificats TLS automatiques, depuis ta propre CA ou Let’s Encrypt.
+
+helm repo add jetstack https://charts.jetstack.io
+helm install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true
+
+kubectl apply -f - <<'EOF'
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: {name: selfsigned}
+spec: {selfSigned: {}}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: lab-ca, namespace: cert-manager}
+spec:
+  isCA: true
+  commonName: homelab-k8s-ca
+  secretName: lab-ca
+  issuerRef: {name: selfsigned, kind: ClusterIssuer}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: {name: lab-ca}
+spec: {ca: {secretName: lab-ca}}
+EOF
+kubectl get clusterissuer
+
+kubectl -n cert-manager get secret lab-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > homelab-k8s-ca.crt
+
+## Observabilité
+kube-prometheus-stack (Prometheus, Grafana, Alertmanager)
+metrics-server, tout petit, rend kubectl top fonctionnel et permet l’autoscaling. Combiné à podinfo (--set hpa.enabled=true) et à un générateur de charge, tu vois les réplicas augmenter tout seuls.
+
+## GitOps
+Argo CD : un manifeste ou un values.yaml dans un dépôt GitHub, et le cluster se met à jour tout seul.
+Flux, l’alternative sans interface graphique. 
+
+## Applications avec des données
+Gitea : une forge Git légère avec sa base de données et ses dépôts sur volumes persistants.
+Uptime Kuma : un outil de supervision d’URL et de services avec une interface agréable, qui tient sur un seul petit volume.
+Nextcloud : plus lourd, mais très parlant pour un public non technique.
+
+## Résilience et sécurité
+Chaos Mesh ou LitmusChaos pour injecter des pannes.
+Kyverno pour imposer des règles, par exemple refuser les images :latest ou exiger des limites de ressources.
+Trivy Operator analyse en continu les images déployées et publie leurs vulnérabilités sous forme de ressources Kubernetes, visibles dans Headlamp.

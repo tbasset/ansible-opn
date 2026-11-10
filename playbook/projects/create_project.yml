@@ -11,26 +11,30 @@
         project_name: "{{ opn_project }}"
 
   tasks:
+    # --- Task 1: Create Projects and Assign Roles (DYNAMIC LOOP) ---
+    - name: Process all defined OpenStack projects
+      block:
+        - name: Create a project named {{ item.name }}
+          openstack.cloud.project:
+            auth:
+              project_name: "admin"
+            name: "{{ item.name }}"
+            description: "{{ item.description }}"
+            is_enabled: True
+            extra_specs:
+              internal_alias: "{{ item.extra_specs.internal_alias }}"
+            state: present
 
-    - name: Create a project
-      openstack.cloud.project:
-        auth:
-          project_name: "admin"
-        name: "{{ opn_project }}"
-        description: "{{ opn_project }} project"
-        is_enabled: True
-        extra_specs:
-          internal_alias: "{{ opn_project }}"
-        state: present
+        - name: Grant a member role to {{ item.role_user }} on the project {{ item.name }}
+          openstack.cloud.role_assignment:
+            auth:
+              project_name: "admin"
+            user: "{{ item.role_user }}"
+            role: member
+            project: "{{ item.name }}"
+      loop: "{{ project_definitions }}"
 
-    - name: "Grant a member role on the user admin in the project {{ opn_project }}"
-      openstack.cloud.role_assignment:
-        auth:
-          project_name: "admin"
-        user: tomm
-        role: member
-        project: "{{ opn_project }}"
-
+    # --- Task 2: Global Security Group Configuration (STATIC TASKS) ---
     - name: Create (or update) IN_SSH security group
       run_once: true
       delegate_to: localhost
@@ -38,7 +42,8 @@
         state: present
         name: IN_SSH
         description: allow incoming ssh
-    - name: Update security group rules
+
+    - name: Update security group rules for SSH (Port 22)
       run_once: true
       delegate_to: localhost
       openstack.cloud.security_group_rule:
@@ -54,8 +59,8 @@
       openstack.cloud.security_group:
         state: present
         name: IN_HTTP
-        description: allow incoming ssh
-    - name: Update security group rules
+        description: allow incoming http traffic
+    - name: Update security group rules for HTTP (Port 80)
       run_once: true
       delegate_to: localhost
       openstack.cloud.security_group_rule:
@@ -73,26 +78,25 @@
         name: ALLOW_ALL
         description: allow all incoming traffic
 
-    - name: Update security group rules
+    - name: Update security group rules for TCP/UDP/ICMP (ALLOW_ALL)
       run_once: true
       delegate_to: localhost
       openstack.cloud.security_group_rule:
         security_group: ALLOW_ALL
         protocol: tcp
         remote_ip_prefix: 0.0.0.0/0
-
-    - name: Update security group rules
+    - name: Update security group rules for TCP/UDP/ICMP (ALLOW_ALL)
       run_once: true
       delegate_to: localhost
       openstack.cloud.security_group_rule:
         security_group: ALLOW_ALL
         protocol: udp
         remote_ip_prefix: 0.0.0.0/0
-
-    - name: Update security group rules
+    - name: Update security group rules for TCP/UDP/ICMP (ALLOW_ALL)
       run_once: true
       delegate_to: localhost
       openstack.cloud.security_group_rule:
         security_group: ALLOW_ALL
         protocol: icmp
         remote_ip_prefix: 0.0.0.0/0
+

@@ -1,0 +1,68 @@
+---
+# inventory/all/projects.yml
+---
+project_definitions:
+  - name: ntier_project
+    description: NTier Application Tier Project
+    extra_specs: { internal_alias: "ntier_project" }
+    role_user: tomm # User who gets member role in this project
+
+  - name: status_project
+    description: Status Monitoring Service Project
+    extra_specs: { internal_alias: "status_project" }
+    role_user: tomm
+# --- Projects derived from Network Configuration ---
+  - name: app-ntier
+    description: Application Tier Network Services Project
+    extra_specs: { internal_alias: "app-ntier" }
+    role_user: tomm
+
+  - name: app-billing
+    description: Billing Services Network Project
+    extra_specs: { internal_alias: "app-billing" }
+    role_user: tomm
+
+  - name: app-foreman
+    description: Foreman Server Network Project
+    extra_specs: { internal_alias: "app-foreman" }
+    role_user: tomm
+
+  - name: app-monitoring
+    description: Monitoring Stack Network Project
+    extra_specs: { internal_alias: "app-monitoring" }
+    role_user: tomm
+
+  # --- LAB Networks (LAB1 through LAB8) ---
+  - name: lab1
+    description: Lab environment 1 network project
+    extra_specs: { internal_alias: "lab1" }
+    role_user: tomm
+  - name: lab2
+    description: Lab environment 2 network project
+    extra_specs: { internal_alias: "lab2" }
+    role_user: tomm
+  - name: lab3
+    description: Lab environment 3 network project
+    extra_specs: { internal_alias: "lab3" }
+    role_user: tomm
+  - name: lab4
+    description: Lab environment 4 network project
+    extra_specs: { internal_alias: "lab4" }
+    role_user: tomm
+  - name: lab5
+    description: Lab environment 5 network project
+    extra_specs: { internal_alias: "lab5" }
+    role_user: tomm
+  - name: lab6
+    description: Lab environment 6 network project
+    extra_specs: { internal_alias: "lab6" }
+    role_user: tomm
+  - name: lab7
+    description: Lab environment 7 network project
+    extra_specs: { internal_alias: "lab7" }
+    role_user: tomm
+  - name: lab8
+    description: Lab environment 8 network project
+    extra_specs: { internal_alias: "lab8" }
+    role_user: tomm
+

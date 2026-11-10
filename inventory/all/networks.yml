@@ -1,0 +1,139 @@
+---
+# inventory/all/networks.yml
+---
+global_vars:
+  external_project: admin
+  default_dns_domain: opn.lab.
+  provider_vlan_network: provider-vlan
+  provider_segmentation_id: 5
+  dns_servers:
+    main: "192.168.133.249"
+    external: "192.168.133.251"
+
+# Network definitions list (Network, Subnet, Router)
+networks:
+  # MARK: EXTERNE - The external backbone network
+  - name_ext: EXTERNE
+    project_name_ext: admin
+    dns_domain_ext: opn.lab.
+    provider_network_type_ext: vlan
+    provider_physical_network_ext: provider-vlan
+    provider_segmentation_id_ext: 5
+    cidr_ext: 192.168.135.0/24
+    dns_servers_ext: "{{ global_vars.dns_servers.external }}"
+  
+  # MARK: NTIER - Application tier network
+  - name_ntier: NTIER
+    project_name_ntier: app-ntier
+    dns_domain_ntier: ntier.opn.lab.
+    provider_network_type_ntier: geneve
+    cidr_ntier: 192.168.23.0/24
+    dns_servers_ntier: "{{ global_vars.dns_servers.main }}"
+    router_name_ntier: NTIER-GW
+    external_ip_ntier: 192.168.135.23
+  
+  # MARK: STATUS - Status monitoring network
+  - name_status: STATUS
+    project_name_status: app-status
+    dns_domain_status: status.opn.lab.
+    provider_network_type_status: geneve
+    cidr_status: 192.168.22.0/24
+    dns_servers_status: "{{ global_vars.dns_servers.main }}"
+    router_name_status: STATUS-GW
+    external_ip_status: 192.168.135.22
+  
+  # MARK: BILLING - Billing network
+  - name_billing: BILLING
+    project_name_billing: app-billing
+    dns_domain_billing: billing.opn.lab.
+    provider_network_type_billing: geneve
+    cidr_billing: 192.168.21.0/24
+    dns_servers_billing: "{{ global_vars.dns_servers.main }}"
+    router_name_billing: BILLING-GW
+    external_ip_billing: 192.168.135.21
+  
+  # MARK: FOREMAN - Foreman server network
+  - name_foreman: FOREMAN
+    project_name_foreman: app-foreman
+    dns_domain_foreman: foreman.opn.lab.
+    provider_network_type_foreman: geneve
+    cidr_foreman: 192.168.20.0/24
+    dns_servers_foreman: "{{ global_vars.dns_servers.main }}"
+    router_name_foreman: FOREMAN-GW
+    external_ip_foreman: 192.168.135.20
+  
+  # MARK: MONITORING - Monitoring stack network
+  - name_monitoring: MONITORING
+    project_name_monitoring: app-monitoring
+    dns_domain_monitoring: monitoring.opn.lab.
+    provider_network_type_monitoring: geneve
+    cidr_monitoring: 192.168.19.0/24
+    dns_servers_monitoring: "{{ global_vars.dns_servers.main }}"
+    router_name_monitoring: MONITORING-GW
+    external_ip_monitoring: 192.168.135.19
+  
+  # MARK: LAB Networks (LAB1 through LAB8) - Explicit List
+  - name_lab_1: "LAB1"
+    project_name_lab_1: lab1
+    dns_domain_lab_1: lab1.opn.lab.
+    provider_network_type_lab_1: geneve
+    cidr_lab_1: "192.168.11.0/24"
+    dns_servers_lab_1: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_1: LAB1-GW
+    external_ip_lab_1: 192.168.135.11
+  - name_lab_2: "LAB2"
+    project_name_lab_2: lab2
+    dns_domain_lab_2: lab2.opn.lab.
+    provider_network_type_lab_2: geneve
+    cidr_lab_2: "192.168.12.0/24"
+    dns_servers_lab_2: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_2: LAB2-GW
+    external_ip_lab_2: 192.168.135.12
+  - name_lab_3: "LAB3"
+    project_name_lab_3: lab3
+    dns_domain_lab_3: lab3.opn.lab.
+    provider_network_type_lab_3: geneve
+    cidr_lab_3: "192.168.13.0/24"
+    dns_servers_lab_3: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_3: LAB3-GW
+    external_ip_lab_3: 192.168.135.13
+  - name_lab_4: "LAB4"
+    project_name_lab_4: lab4
+    dns_domain_lab_4: lab4.opn.lab.
+    provider_network_type_lab_4: geneve
+    cidr_lab_4: "192.168.14.0/24"
+    dns_servers_lab_4: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_4: LAB4-GW
+    external_ip_lab_4: 192.168.135.14
+  - name_lab_5: "LAB5"
+    project_name_lab_5: lab5
+    dns_domain_lab_5: lab5.opn.lab.
+    provider_network_type_lab_5: geneve
+    cidr_lab_5: "192.168.15.0/24"
+    dns_servers_lab_5: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_5: LAB5-GW
+    external_ip_lab_5: 192.168.135.15
+  - name_lab_6: "LAB6"
+    project_name_lab_6: lab6
+    dns_domain_lab_6: lab6.opn.lab.
+    provider_network_type_lab_6: geneve
+    cidr_lab_6: "192.168.16.0/24"
+    dns_servers_lab_6: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_6: LAB6-GW
+    external_ip_lab_6: 192.168.135.16
+  - name_lab_7: "LAB7"
+    project_name_lab_7: lab7
+    dns_domain_lab_7: lab7.opn.lab.
+    provider_network_type_lab_7: geneve
+    cidr_lab_7: "192.168.17.0/24"
+    dns_servers_lab_7: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_7: LAB7-GW
+    external_ip_lab_7: 192.168.135.17
+  - name_lab_8: "LAB8"
+    project_name_lab_8: lab8
+    dns_domain_lab_8: lab8.opn.lab.
+    provider_network_type_lab_8: geneve
+    cidr_lab_8: "192.168.18.0/24"
+    dns_servers_lab_8: "{{ global_vars.dns_servers.main }}"
+    router_name_lab_8: LAB8-GW
+    external_ip_lab_8: 192.168.135.18
