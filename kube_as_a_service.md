@@ -1083,3 +1083,14 @@ cd ~/demo-gitops
 git add apps/homepage && git commit -m "Homepage, page d'accueil du homelab" && git push
 ```
 
+NAME: headlamp
+LAST DEPLOYED: Wed Nov 11 21:51:56 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 2
+TEST SUITE: None
+NOTES:
+1. Get the application URL by running these commands:
+  https://headlamp.k8s.lab/
+2. Get the token using
+  kubectl create token headlamp --namespace kube-system
