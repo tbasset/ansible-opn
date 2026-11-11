@@ -584,9 +584,164 @@ git commit -m "Argo Rollouts et démonstration canary" && git push
 
 # Kyverno 
 
+helm repo add kyverno https://kyverno.github.io/kyverno/ && helm repo update
+helm search repo kyverno/kyverno --versions | head -3
+helm search repo kyverno/kyverno-policies --versions | head -3
+
+cd ~/demo-gitops
+mkdir -p apps/kyverno
+
+cat > apps/kyverno/Chart.yaml <<EOF
+apiVersion: v2
+name: kyverno
+version: 0.1.0
+dependencies:
+  - name: kyverno
+    version: "3.10.0"
+    repository: https://kyverno.github.io/kyverno/
+  - name: kyverno-policies
+    version: "3.10.0"
+    repository: https://kyverno.github.io/kyverno/
+EOF
+
+cat > apps/kyverno/values.yaml <<EOF
+kyverno-policies:
+  podSecurityStandard: baseline    # politiques Pod Security « baseline » de Kubernetes
+  validationFailureAction: Audit   # signaler sans bloquer, pour commencer
+EOF
+
+mkdir -p apps/kyverno/templates
+
+cat > apps/kyverno/templates/disallow-latest-tag.yaml <<EOF
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Interdire le tag latest
+    policies.kyverno.io/severity: medium
+spec:
+  background: true
+  rules:
+    - name: require-explicit-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      validate:
+        failureAction: Audit
+        message: "Un tag d'image explicite est obligatoire, et ':latest' est interdit."
+        foreach:
+          - list: "request.object.spec.containers"
+            pattern:
+              image: "*:* & !*:latest"
+EOF
+
+cd ~/demo-gitops && git add apps/kyverno
+
 # Policy Reporter
 
+mkdir -p apps/policy-reporter
+
+cat > apps/policy-reporter/Chart.yaml <<EOF
+apiVersion: v2
+name: policy-reporter
+version: 0.1.0
+dependencies:
+  - name: policy-reporter
+    version: "3.11.2"
+    repository: https://kyverno.github.io/policy-reporter
+EOF
+
+cat > apps/policy-reporter/values.yaml <<EOF
+policy-reporter:
+  plugin:
+    kyverno:
+      enabled: true      # détails des politiques Kyverno dans l'interface
+    trivy:
+      enabled: true      # affiche aussi les rapports de Trivy Operator
+  ui:
+    enabled: true
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: lab-ca
+      hosts:
+        - host: policies.k8s.lab
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: policy-reporter-tls
+          hosts:
+            - policies.k8s.lab
+EOF
+
+cd ~/demo-gitops && git add apps/policy-reporter
+
+cd ~/demo-gitops && mkdir -p bootstrap
+
+cat > bootstrap/applicationset.yaml <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: demo-apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitadmin/demo-gitops.git
+        revision: main
+        directories:
+          - path: apps/*
+  template:
+    metadata:
+      name: '{{.path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitadmin/demo-gitops.git
+        targetRevision: main
+        path: '{{.path.path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.path.basename}}'
+      syncPolicy:
+        automated: {prune: true, selfHeal: true}
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+EOF
+kubectl apply -f bootstrap/applicationset.yaml      # identique à l'état actuel : aucun changement
+
+git add bootstrap && git commit -m "ApplicationSet versionné, avec ServerSideApply" && git push
+
+kubectl apply -f - <<'EOF'
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bootstrap
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitadmin/demo-gitops.git
+    targetRevision: main
+    path: bootstrap
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: {prune: false, selfHeal: true}
+EOF
+
+git commit -m "Kyverno, politiques baseline et Policy Reporter" && git push
+
 # Falco
+
+
 
 # Homepage
 
