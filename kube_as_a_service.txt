@@ -606,35 +606,46 @@ EOF
 
 cat > apps/kyverno/values.yaml <<EOF
 kyverno-policies:
-  podSecurityStandard: baseline    # politiques Pod Security « baseline » de Kubernetes
-  validationFailureAction: Audit   # signaler sans bloquer, pour commencer
+  podSecurityStandard: baseline
+  validationFailureAction: Audit
+  failurePolicy: Ignore              # si Kyverno est en panne, on laisse passer au lieu de bloquer
+  vpolExclude:
+    excludeNamespaces:               # ces namespaces ne sont ni contrôlés ni rapportés
+      - kube-system
+      - kyverno
 EOF
 
 mkdir -p apps/kyverno/templates
 
 cat > apps/kyverno/templates/disallow-latest-tag.yaml <<EOF
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1          # adapter selon api-resources
+kind: ValidatingPolicy
 metadata:
   name: disallow-latest-tag
   annotations:
     policies.kyverno.io/title: Interdire le tag latest
     policies.kyverno.io/severity: medium
 spec:
-  background: true
-  rules:
-    - name: require-explicit-tag
-      match:
-        any:
-          - resources:
-              kinds: [Pod]
-      validate:
-        failureAction: Audit
-        message: "Un tag d'image explicite est obligatoire, et ':latest' est interdit."
-        foreach:
-          - list: "request.object.spec.containers"
-            pattern:
-              image: "*:* & !*:latest"
+ spec:
+  validationActions: [Audit]
+  failurePolicy: Ignore
+  matchConstraints:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [kube-system, kyverno]
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c,
+          c.image.substring(c.image.lastIndexOf('/') + 1).contains(':') &&
+          !c.image.endsWith(':latest'))
+      message: "Un tag d'image explicite est obligatoire, et ':latest' est interdit."
 EOF
 
 cd ~/demo-gitops && git add apps/kyverno
@@ -736,6 +747,8 @@ spec:
   syncPolicy:
     automated: {prune: false, selfHeal: true}
 EOF
+
+
 
 git commit -m "Kyverno, politiques baseline et Policy Reporter" && git push
 
