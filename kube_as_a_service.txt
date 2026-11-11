@@ -212,7 +212,8 @@ kubectl get clusterissuer
 kubectl -n cert-manager get secret lab-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > homelab-k8s-ca.crt
 
 ## Observabilité
-metrics-server, tout petit, rend kubectl top fonctionnel et permet l’autoscaling. Combiné à podinfo (--set hpa.enabled=true) et à un générateur de charge.
+
+# metrics-server, tout petit, rend kubectl top fonctionnel et permet l’autoscaling. Combiné à podinfo (--set hpa.enabled=true) et à un générateur de charge.
 
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 
@@ -234,7 +235,8 @@ kubectl -n demo get hpa -w
 kubectl -n demo delete pod load   # ils redescendent après environ 5 min
 
 ## GitOps
-Argo CD : un manifeste ou un values.yaml dans un dépôt GitHub, et le cluster se met à jour tout seul.
+
+# Argo CD : un manifeste ou un values.yaml dans un dépôt GitHub, et le cluster se met à jour tout seul.
 
 helm repo add argo https://argoproj.github.io/argo-helm
 
@@ -247,7 +249,8 @@ helm install argocd argo/argo-cd -n argocd --create-namespace \
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 
 ## Applications avec des données
-Gitea : une forge Git légère avec sa base de données et ses dépôts sur volumes persistants.
+
+# Gitea : une forge Git légère avec sa base de données et ses dépôts sur volumes persistants.
 
 helm repo add gitea-charts https://dl.gitea.com/charts/
 
@@ -281,19 +284,422 @@ helm install uptime-kuma uptime-kuma/uptime-kuma -n monitoring --create-namespac
   --set-json "ingress.tls=[{\"secretName\":\"kuma-tls\",\"hosts\":[\"status.${DOMAIN}\"]}]" \
   --set ingress.annotations."cert-manager\.io/cluster-issuer"=lab-ca
 
-Nextcloud : plus lourd, mais très parlant pour un public non technique.
-
 ## Résilience et sécurité
-Chaos Mesh ou LitmusChaos pour injecter des pannes.
-Kyverno pour imposer des règles, par exemple refuser les images :latest ou exiger des limites de ressources.
-Trivy Operator analyse en continu les images déployées et publie leurs vulnérabilités sous forme de ressources Kubernetes, visibles dans Headlamp.
+
+# Chaos Mesh ou LitmusChaos pour injecter des pannes.
+# Kyverno pour imposer des règles, par exemple refuser les images :latest ou exiger des limites de ressources.
+# Trivy Operator analyse en continu les images déployées et publie leurs vulnérabilités sous forme de ressources Kubernetes, visibles dans Headlamp.
 
 helm repo add aqua https://aquasecurity.github.io/helm-charts/
 
 helm install trivy-operator aqua/trivy-operator -n trivy-system --create-namespace \
   --set trivy.ignoreUnfixed=true \
-  --set operator.scanJobsConcurrentLimit=1
+  --set operator.scanJobsConcurrentLimit=1 \
+  --set nodeCollector.excludeNodes='node-role.kubernetes.io/control-plane='
 
 kubectl get vulnerabilityreports -A -o wide      # remplissage progressif en quelques minutes
 kubectl get configauditreports -A -o wide
+
+kubectl get vulnerabilityreports -A -o json | jq -r '
+  .items[] | [.metadata.namespace,
+              .report.artifact.repository + ":" + (.report.artifact.tag // ""),
+              .report.summary.criticalCount, .report.summary.highCount] | @tsv' \
+  | sort -t$'\t' -k3,3nr -k4,4nr | column -t | head -20
+
+kubectl -n demo get vulnerabilityreports                         # nom du rapport, ex : replicaset-podinfo-xxxx-podinfo
+kubectl -n demo get vulnerabilityreport <nom> -o json | jq -r '
+  .report.vulnerabilities[] | select(.severity=="CRITICAL" or .severity=="HIGH")
+  | [.severity, .vulnerabilityID, .resource, .installedVersion, .fixedVersion, .title] | @tsv' | column -t -s$'\t'
+
+
+# Renovate
+
+GITEA_TOKEN=3600668f6c753a72e078fb42c7e1a274e1468b90
+
+kubectl create ns renovate
+kubectl -n renovate create secret generic renovate-env \
+  --from-literal=RENOVATE_TOKEN="$GITEA_TOKEN"
+
+cd ~/demo-gitops
+cat > renovate-config.json <<EOF
+{
+  "platform": "gitea",
+  "endpoint": "http://gitea-http.gitea.svc.cluster.local:3000/api/v1",
+  "gitUrl": "endpoint",
+  "gitAuthor": "Renovate Bot <renovate@homelab.local>",
+  "autodiscover": false,
+  "repositories": ["gitadmin/demo-gitops"],
+  "onboarding": false,
+  "requireConfig": "optional"
+}
+EOF
+
+git add renovate-config.json && git commit -m "Config Renovate" && git push
+
+helm install renovate oci://ghcr.io/renovatebot/charts/renovate -n renovate \
+  --set-file renovate.config=renovate-config.json \
+  --set existingSecret=renovate-env \
+  --set cronjob.schedule='0 * * * *'
+
+kubectl apply -f - <<'EOF'
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: demo-apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitadmin/demo-gitops.git
+        revision: main
+        directories:
+          - path: apps/*
+  template:
+    metadata:
+      name: '{{.path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitadmin/demo-gitops.git
+        targetRevision: main
+        path: '{{.path.path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.path.basename}}'
+      syncPolicy:
+        automated: {prune: true, selfHeal: true}
+        syncOptions: [CreateNamespace=true]
+EOF
+
+# Sealed secrets
+
+cd ~/demo-gitops && git pull
+mkdir -p apps/sealed-secrets
+
+cat > apps/sealed-secrets/Chart.yaml <<EOF
+apiVersion: v2
+name: sealed-secrets
+version: 0.1.0
+dependencies:
+  - name: sealed-secrets
+    version: "2.22.0"
+    repository: https://bitnami-labs.github.io/sealed-secrets
+EOF
+
+cat > apps/sealed-secrets/values.yaml <<EOF
+sealed-secrets:
+  fullnameOverride: sealed-secrets-controller   # nom attendu par défaut par kubeseal
+EOF
+
+git add apps/sealed-secrets && git commit -m "Ajout de Sealed Secrets" && git push
+
+cd ~
+V=0.41.2
+curl -LO https://github.com/bitnami-labs/sealed-secrets/releases/download/v${V}/kubeseal-${V}-linux-amd64.tar.gz
+tar xzf kubeseal-${V}-linux-amd64.tar.gz kubeseal && install -m 0755 kubeseal /usr/local/bin/ && rm kubeseal*
+kubeseal --version
+
+echo 'export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets' >> ~/.bashrc && source ~/.bashrc
+kubectl -n sealed-secrets get secret -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml > ~/sealed-secrets-key-BACKUP.yaml
+chmod 600 ~/sealed-secrets-key-BACKUP.yaml
+
+# secret pour podinfo
+
+cd ~/demo-gitops
+mkdir -p apps/podinfo/templates
+kubectl create secret generic podinfo-demo -n podinfo \
+  --from-literal=message='Ce texte vient d un secret chiffré dans Git' \
+  --dry-run=client -o yaml \
+| kubeseal --format yaml > apps/podinfo/templates/podinfo-demo-sealed.yaml
+cat apps/podinfo/templates/podinfo-demo-sealed.yaml       # le contenu est illisible : c'est le but
+
+# secret pour Renovate
+
+cd ~/demo-gitops && mkdir -p apps/renovate/templates
+TOKEN=$(kubectl -n renovate get secret renovate-env -o jsonpath='{.data.RENOVATE_TOKEN}' | base64 -d)
+kubectl create secret generic renovate-env -n renovate \
+  --from-literal=RENOVATE_TOKEN="$TOKEN" --dry-run=client -o yaml \
+| kubeseal --format yaml > apps/renovate/templates/renovate-env-sealed.yaml
+unset TOKEN
+
+cat > apps/renovate/Chart.yaml <<EOF
+apiVersion: v2
+name: renovate
+version: 0.1.0
+dependencies:
+  - name: renovate
+    version: "46.424.0"
+    repository: oci://ghcr.io/renovatebot/charts
+EOF
+
+cat > apps/renovate/values.yaml <<EOF
+renovate:
+  cronjob:
+    schedule: "0 * * * *"
+  existingSecret: renovate-env
+  renovate:
+    config: |
+      {
+        "platform": "gitea",
+        "endpoint": "http://gitea-http.gitea.svc.cluster.local:3000/api/v1",
+        "gitUrl": "endpoint",
+        "gitAuthor": "Renovate Bot <renovate@homelab.local>",
+        "autodiscover": false,
+        "repositories": ["gitadmin/demo-gitops"],
+        "onboarding": false,
+        "requireConfig": "optional"
+      }
+EOF
+
+helm uninstall renovate -n renovate
+kubectl -n renovate delete secret renovate-env
+
+git add apps/renovate && git commit -m "Renovate géré par Argo CD, jeton chiffré" && git push
+
+# Argo Rollouts
+
+cd ~/demo-gitops
+mkdir -p apps/argo-rollouts
+
+cat > apps/argo-rollouts/Charts.yaml <<EOF
+apiVersion: v2
+name: argo-rollouts
+version: 0.1.0
+dependencies:
+  - name: argo-rollouts
+    version: "2.43.12"
+    repository: https://argoproj.github.io/argo-helm
+EOF
+
+cat > apps/argo-rollouts/value.yaml <<EOF
+argo-rollouts:
+  dashboard:
+    enabled: true
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: lab-ca
+      hosts:
+        - rollouts.k8s.lab
+      tls:
+        - secretName: rollouts-dashboard-tls
+          hosts:
+            - rollouts.k8s.lab
+EOF
+
+cd ~
+curl -LO https://github.com/argoproj/argo-rollouts/releases/download/v1.10.2/kubectl-argo-rollouts-linux-amd64
+install -m 0755 kubectl-argo-rollouts-linux-amd64 /usr/local/bin/kubectl-argo-rollouts && rm kubectl-argo-rollouts-linux-amd64
+kubectl argo rollouts version
+
+cd ~/demo-gitops 
+git add apps/argo-rollouts && git commit -m "Argo rollouts controller" && git push
+
+cd ~/demo-gitops 
+mkdir -p apps/podinfo-canary
+
+cat > apps/podinfo-canary/rollout.yaml <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: podinfo-canary
+spec:
+  replicas: 5
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: podinfo-canary
+  template:
+    metadata:
+      labels:
+        app: podinfo-canary
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.9.0
+          ports:
+            - name: http
+              containerPort: 9898
+          env:
+            - name: PODINFO_UI_COLOR
+              value: "#34577c"
+            - name: PODINFO_UI_MESSAGE
+              value: "Version 1 - bleu"
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20          # 1 pod sur 5 en nouvelle version
+        - pause: {}              # attend une validation manuelle
+        - setWeight: 60
+        - pause: {duration: 30s}
+        # puis passage automatique à 100 %
+EOF
+
+cat > apps/podinfo-canary/service.yaml <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo-canary
+spec:
+  selector:
+    app: podinfo-canary
+  ports:
+    - port: 80
+      targetPort: http
+EOF
+
+cat > apps/podinfo-canary/ingress.yaml <<EOF
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: podinfo-canary
+  annotations:
+    cert-manager.io/cluster-issuer: lab-ca
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: canary.k8s.lab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: podinfo-canary, port: {number: 80}}
+  tls:
+    - secretName: podinfo-canary-tls
+      hosts: [canary.k8s.lab]
+EOF
+
+cd ~/demo-gitops
+git add apps/argo-rollouts apps/podinfo-canary
+git commit -m "Argo Rollouts et démonstration canary" && git push
+
+
+
+# Kyverno 
+
+# Policy Reporter
+
+# Falco
+
+# Homepage
+
+cd ~/demo-gitops
+mkdir -p apps/homepage
+
+cat > apps/homepage/Chart.yaml <<EOF
+apiVersion: v2
+name: homepage
+version: 0.1.0
+dependencies:
+  - name: homepage
+    version: "2.1.0"
+    repository: https://jameswynn.github.io/helm-charts
+EOF
+
+cat > apps/homepage/values.yaml <<EOF
+homepage:
+  enableRbac: true              # nécessaire pour les widgets Kubernetes
+  serviceAccount:
+    create: true
+
+  env:
+    - name: HOMEPAGE_ALLOWED_HOSTS
+      value: "home.k8s.lab"    # obligatoire depuis la v1 de Homepage
+
+  ingress:
+    main:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: lab-ca
+      hosts:
+        - host: home.k8s.lab
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: homepage-tls
+          hosts:
+            - home.k8s.lab
+
+  config:
+    kubernetes:
+      mode: cluster
+
+    widgets:
+      - kubernetes:
+          cluster: {show: true, cpu: true, memory: true, showLabel: true, label: "test1"}
+          nodes:   {show: true, cpu: true, memory: true, showLabel: true}
+      - search:
+          provider: duckduckgo
+          target: _blank
+
+    services:
+      - OpenStack:
+          - Horizon:
+              href: https://192.168.133.3/
+              description: Tableau de bord OpenStack
+              icon: openstack.png
+          - Uptime Kuma:
+              href: https://status.k8s.lab
+              description: Disponibilité des services OpenStack
+              icon: uptime-kuma.png
+              siteMonitor: http://uptime-kuma.monitoring.svc.cluster.local:3001
+      - Kubernetes:
+          - Headlamp:
+              href: http://<IP_HEADLAMP>
+              description: Interface du cluster test1
+              icon: headlamp.png
+          - Argo CD:
+              href: https://argocd.k8s.lab
+              description: Déploiement GitOps
+              icon: argo-cd.png
+              siteMonitor: http://argocd-server.argocd.svc.cluster.local
+          - Argo Rollouts:
+              href: https://rollouts.k8s.lab
+              description: Déploiements canary
+              icon: argo-cd.png
+      - Développement:
+          - Gitea:
+              href: https://git.k8s.lab
+              description: Dépôts Git et registre d'images
+              icon: gitea.png
+              siteMonitor: http://gitea-http.gitea.svc.cluster.local:3000
+      - Démos:
+          - podinfo:
+              href: https://gitops.k8s.lab
+              description: Application GitOps
+              icon: mdi-rocket-launch
+          - podinfo canary:
+              href: https://canary.k8s.lab
+              description: Démonstration Argo Rollouts
+              icon: mdi-bird
+
+    settingsString: |
+      title: Homelab OpenStack
+      theme: dark
+      color: slate
+      headerStyle: boxed
+      layout:
+        OpenStack:
+          style: row
+          columns: 2
+        Kubernetes:
+          style: row
+          columns: 3
+        Développement:
+        Démos:
+          style: row
+          columns: 2
+EOF
+
+cd ~/demo-gitops
+git add apps/homepage && git commit -m "Homepage, page d'accueil du homelab" && git push
 
